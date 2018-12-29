@@ -2,19 +2,13 @@ import python
 private import semmle.python.pointsto.PointsTo
 private import semmle.python.pointsto.Base
 private import semmle.python.types.ModuleKind
+private import semmle.python.types.Object
+
 
 abstract class ModuleObject extends Object {
 
-    ModuleObject () {
-        exists(Module m | m.getEntryNode() = this)
-        or
-        py_cobjecttypes(this, theModuleType())
-    }
-
     /** Gets the scope corresponding to this module, if this is a Python module */
-    Module getModule() {
-        none()
-    }
+    abstract Module getModule();
 
     Container getPath() {
         none()
@@ -46,12 +40,6 @@ abstract class ModuleObject extends Object {
         result.getName() = this.getName().regexpReplaceAll("\\.[^.]*$", "")
     }
 
-    /** Whether this module "exports" `name`. That is, whether using `import *` on this module
-     will result in `name` being added to the namespace. */
-    predicate exports(string name) {
-        PointsTo::module_exports(this, name)
-    }
- 
     /** Whether the complete set of names "exported" by this module can be accurately determined */
     abstract predicate exportsComplete();
 
@@ -85,24 +73,34 @@ abstract class ModuleObject extends Object {
         result = true
     }
 
+    override predicate maybe() { none() }
+
+    override boolean isClass() {
+        result = false
+    }
+
 }
 
-class BuiltinModuleObject extends ModuleObject {
+class BuiltinModuleObject extends ModuleObject, BuiltinObject {
 
-    BuiltinModuleObject () {
-        py_cobjecttypes(this, theModuleType())
+    BuiltinModuleObject() {
+        py_cobjecttypes(this.getRaw(), theModuleType().getRaw())
+    }
+
+    override string toString() {
+        result = ModuleObject.super.toString()
     }
 
     override string getName() {
-        py_cobjectnames(this, result)
+        py_cobjectnames(this.getRaw(), result)
     }
 
     override Object getAttribute(string name) {
-        py_cmembers_versioned(this, name, result, major_version().toString())
+        py_cmembers_versioned(this.getRaw(), name, result.(BuiltinObject).getRaw(), major_version().toString())
     }
 
     override predicate hasAttribute(string name) {
-        py_cmembers_versioned(this, name, _, major_version().toString())
+        py_cmembers_versioned(this.getRaw(), name, _, major_version().toString())
     }
 
     override predicate attributeRefersTo(string name, Object value, Origin origin) {
@@ -117,13 +115,20 @@ class BuiltinModuleObject extends ModuleObject {
         any()
     }
 
+    override Module getModule() {
+        none()
+    }
 
 }
 
-class PythonModuleObject extends ModuleObject {
+class PythonModuleObject extends ModuleObject, SourceObject {
+
+    override string toString() {
+        result = ModuleObject.super.toString()
+    }
 
     PythonModuleObject() {
-        exists(Module m | m.getEntryNode() = this |
+        exists(Module m | m.getEntryNode() = this.getFlowOrigin() |
             not m.isPackage()
         )
     }
@@ -172,6 +177,14 @@ class PythonModuleObject extends ModuleObject {
          PointsTo::py_module_attributes(this.getModule(), name, value, cls, origin)
     }
 
+    override ClassObject getAnInferredType() {
+        result = theModuleType()
+    }
+
+    override boolean isComparable() {
+        result = true
+    }
+    
 }
 
 /**  Primarily for internal use.
@@ -180,80 +193,12 @@ class PythonModuleObject extends ModuleObject {
  * The extractor will have populated a str object 
  * for each module name, with the name b'text' or u'text' (including the quotes).
  */
-Object object_for_string(string text) {
-    py_cobjecttypes(result, theStrType()) and
+BuiltinObject object_for_string(string text) {
+    py_cobjecttypes(result.getRaw(), theStrType().getRaw()) and
     exists(string repr |
-        py_cobjectnames(result, repr) and
+        py_cobjectnames(result.getRaw(), repr) and
         repr.charAt(1) = "'" |
         /* Strip quotes off repr */
         text = repr.substring(2, repr.length()-1)
     )
 }
-
-class PackageObject extends ModuleObject {
-
-    PackageObject() {
-        exists(Module p | p.getEntryNode() = this |
-            p.isPackage()
-        )
-    }
-
-    override string getName() {
-        result = this.getModule().getName()
-    }
-
-    override Module getModule() {
-        result = this.getOrigin()
-    }
-
-    override Container getPath() {
-        exists(ModuleObject m | 
-            m.getPackage() = this |
-            result = m.getPath().getParent()
-        )
-    }
-
-    ModuleObject submodule(string name) {
-        result.getPackage() = this and
-        name = result.getShortName()
-    }
-
-    override Object getAttribute(string name) {
-        PointsTo::package_attribute_points_to(this, name, result, _, _)
-    }
-
-    PythonModuleObject getInitModule() {
-        result.getModule() = this.getModule().getInitModule()
-    }
-
-    override predicate exportsComplete() {
-        not exists(this.getInitModule())
-        or
-        this.getInitModule().exportsComplete()
-    }
-
-    override predicate hasAttribute(string name) {
-        exists(this.submodule(name))
-        or
-        this.getInitModule().hasAttribute(name)
-    }
-
-    override predicate attributeRefersTo(string name, Object value, Origin origin) {
-        PointsTo::package_attribute_points_to(this, name, value, _, origin)
-    }
-
-    override predicate attributeRefersTo(string name, Object value, ClassObject cls, Origin origin) {
-        PointsTo::package_attribute_points_to(this, name, value, cls, origin)
-    }
-
-    Location getLocation() {
-        none()
-    }
-
-    override predicate hasLocationInfo(string path, int bl, int bc, int el, int ec) {
-        path = this.getPath().getName() and
-        bl = 0 and bc = 0 and el = 0 and ec = 0
-    }
-
-}
-

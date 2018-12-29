@@ -93,6 +93,10 @@ class ClassList extends TClassList {
         result = this.getTail().getItem(n-1)
     }
 
+    ClassObject getAnItem() {
+        result = this.getItem(_)
+    }
+
     pragma [inline]
     ClassList removeHead(ClassObject cls) {
         this.getHead() = cls and result = this.getTail()
@@ -139,23 +143,16 @@ class ClassList extends TClassList {
     ClassObject findDeclaringClass(string name) {
         exists(ClassObject head |
             head = this.getHead() and
-            not head = theUnknownType() |
-            if head.declaresAttribute(name) then
-                result = head
-            else
-                result = this.getTail().findDeclaringClass(name)
+            head != theUnknownType() |
+            head.declaresAttributeBoolean(name) = true and result = head
+            or
+            head.declaresAttributeBoolean(name) = false and
+            result = this.getTail().findDeclaringClass(name)
         )
     }
 
     Object lookup(string name) {
-        exists(ClassObject head |
-            head = this.getHead() and
-            not head = theUnknownType() |
-            if head.declaresAttribute(name) then
-                result = head.declaredAttribute(name)
-            else
-                result = this.getTail().lookup(name)
-        )
+        result = this.findDeclaringClass(name).declaredAttribute(name)
     }
 
     predicate declares(string name) {

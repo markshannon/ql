@@ -15,9 +15,9 @@ module BasePointsTo {
     pragma [noinline]
     predicate points_to(ControlFlowNode f, Object value, ControlFlowNode origin) {
     (
-            f.isLiteral() and value = f and not f.getNode() instanceof ImmutableLiteral
+            f.isLiteral() and value.(SourceObject).getFlowOrigin() = f and not f.getNode() instanceof ImmutableLiteral
             or
-            f.isFunction() and value = f
+            f.isFunction() and value.(SourceObject).getFlowOrigin() = f
         ) and origin = f
     }
 }
@@ -41,13 +41,13 @@ predicate varargs_points_to(ControlFlowNode f, ClassObject cls) {
  */
 pragma [noinline]
 ClassObject simple_types(Object obj) {
-    result = comprehension(obj.getOrigin())
+    result = comprehension(obj.(SourceObject).getOrigin())
     or
-    result = collection_literal(obj.getOrigin())
+    result = collection_literal(obj.(SourceObject).getOrigin())
     or
-    obj.getOrigin() instanceof CallableExpr and result = thePyFunctionType()
+    obj.(SourceObject).getOrigin() instanceof CallableExpr and result = thePyFunctionType()
     or
-    obj.getOrigin() instanceof Module and result = theModuleType()
+    obj.(SourceObject).getOrigin() instanceof Module and result = theModuleType()
     or
     result = builtin_object_type(obj)
 }
@@ -72,20 +72,15 @@ private ClassObject collection_literal(Expr e) {
     e instanceof Tuple and result = theTupleType()
 }
 
-private int tuple_index_value(Object t, int i) {
-    result = t.(TupleNode).getElement(i).getNode().(Num).getN().toInt()
-    or
-    exists(Object item |
-         py_citems(t, i, item) and
-        result = item.(NumericObject).intValue()
-    )
+private int tuple_index_value(TupleObject t, int i) {
+    result = t.getElement(i).(NumericObject).intValue()
 }
 
 pragma [noinline]
-int version_tuple_value(Object t) {
-    not exists(tuple_index_value(t, 1)) and result = tuple_index_value(t, 0)*10
+int version_tuple_value(TupleObject t) {
+    t.getLength() = 1 and result = tuple_index_value(t, 0)*10
     or
-    not exists(tuple_index_value(t, 2)) and result = tuple_index_value(t, 0)*10 + tuple_index_value(t, 1)
+    t.getLength() = 2 and result = tuple_index_value(t, 0)*10 + tuple_index_value(t, 1)
     or
     tuple_index_value(t, 2) = 0 and result = tuple_index_value(t, 0)*10 + tuple_index_value(t, 1)
     or
@@ -126,30 +121,40 @@ predicate baseless_is_new_style(ClassObject cls) {
 
 /** Gets the base class of built-in class `cls` */
 pragma [noinline]
-ClassObject builtin_base_type(ClassObject cls) {
+BuiltinClassObject builtin_base_type(BuiltinClassObject cls) {
     /* The extractor uses the special name ".super." to indicate the super class of a builtin class */
-    py_cmembers_versioned(cls, ".super.", result, _)
+    py_cmembers_versioned(cls.getRaw(), ".super.", result.getRaw(), _)
 }
 
 /** Gets the `name`d attribute of built-in class `cls` */
 pragma [noinline]
-Object builtin_class_attribute(ClassObject cls, string name) {
+BuiltinObject builtin_class_attribute(BuiltinClassObject cls, string name) {
     not name = ".super." and
-    py_cmembers_versioned(cls, name, result, _)
+    py_cmembers_versioned(cls.getRaw(), name, result.getRaw(), _)
 }
 
 /** Holds if the `name`d attribute of built-in module `m` is `value` of `cls` */
 pragma [noinline]
-predicate builtin_module_attribute(ModuleObject m, string name, Object value, ClassObject cls) {
-    py_cmembers_versioned(m, name, value, _) and cls = builtin_object_type(value)
+predicate builtin_module_attribute(BuiltinModuleObject m, string name, BuiltinObject value, ClassObject cls) {
+    py_cmembers_versioned(m.getRaw(), name, value.getRaw(), _) and cls = builtin_object_type(value)
 }
 
 /** Gets the (built-in) class of the built-in object `obj` */
 pragma [noinline]
 ClassObject builtin_object_type(Object obj) {
-    py_cobjecttypes(obj, result) and not obj = unknownValue()
+    py_cobjecttypes(obj.(BuiltinClassObject).getRaw(), result.(BuiltinClassObject).getRaw())
     or
     obj = unknownValue() and result = theUnknownType()
+}
+
+predicate builtin_class_defines_name(@py_cobject cls, string name) {
+    not name = ".super." and
+    py_cobjecttypes(_, cls) and
+    py_cmembers_versioned(cls, name, _, _) and
+    not exists(@py_cobject sup |
+        py_cmembers_versioned(cls, ".super.", sup, _) and
+        py_cmembers_versioned(sup, name, _, _)
+    )
 }
 
 /** Holds if this class (not on a super-class) declares name */
@@ -160,13 +165,7 @@ predicate class_declares_attribute(ClassObject cls, string name) {
         class_defines_name(defn, name)
     )
     or
-    exists(Object o |
-        o = builtin_class_attribute(cls, name) and 
-        not exists(ClassObject sup |
-            sup = builtin_base_type(cls) and
-            o = builtin_class_attribute(sup, name)
-        )
-    )
+    builtin_class_defines_name(cls.(BuiltinClassObject).getRaw(), name)
 }
 
 /** Holds if the class defines name */
@@ -550,17 +549,12 @@ predicate import_from_dot_in_init(ImportExprNode f) {
 }
 
 /** Gets the pseudo-object representing the value referred to by an undefined variable */
-Object undefinedVariable() {
-    py_special_objects(result, "_semmle_undefined_value")
-}
-
-/** Gets the pseudo-object representing an unknown value */
-Object unknownValue() {
-    py_special_objects(result, "_1")
+BuiltinObject undefinedVariable() {
+    py_special_objects(result.getRaw(), "_semmle_undefined_value")
 }
 
 BuiltinCallable theTypeNewMethod() {
-    py_cmembers_versioned(theTypeType(), "__new__", result, major_version().toString())
+    py_cmembers_versioned(theTypeType().getRaw(), "__new__", result.getRaw(), major_version().toString())
 }
 
 /** Gets the `value, cls, origin` that `f` would refer to if it has not been assigned some other value */
@@ -570,13 +564,13 @@ predicate potential_builtin_points_to(NameNode f, Object value, ClassObject cls,
     (
         builtin_name_points_to(f.getId(), value, cls)
         or
-        not exists(builtin_object(f.getId())) and value = unknownValue() and cls = theUnknownType()
+        not exists(raw_builtin_object(f.getId())) and value = unknownValue() and cls = theUnknownType()
     )
 }
 
 pragma [noinline]
-predicate builtin_name_points_to(string name, Object value, ClassObject cls) {
-    value = builtin_object(name) and py_cobjecttypes(value, cls)
+predicate builtin_name_points_to(string name, BuiltinObject value, BuiltinClassObject cls) {
+    value = builtin_object(name) and py_cobjecttypes(value.getRaw(), cls.getRaw())
 }
 
 module BaseFlow {
@@ -610,9 +604,9 @@ module BaseFlow {
 
 /** Points-to for syntactic elements where context is not relevant */
 predicate simple_points_to(ControlFlowNode f, Object value, ClassObject cls, ControlFlowNode origin) {
-    kwargs_points_to(f, cls) and value = f and origin = f
+    kwargs_points_to(f, cls) and value.(SourceObject).getFlowOrigin() = f and origin = f
     or
-    varargs_points_to(f, cls) and value = f and origin = f
+    varargs_points_to(f, cls) and value.(SourceObject).getFlowOrigin() = f and origin = f
     or
     BasePointsTo::points_to(f, value, origin) and cls = simple_types(value)
     or
@@ -641,10 +635,7 @@ Module theCollectionsAbcModule() {
     result.getName() = "_collections_abc"
 }
 
-ClassObject collectionsAbcClass(string name) {
-     exists(Class cls |
-        result.getPyClass() = cls and
-        cls.getName() = name and
-        cls.getScope() = theCollectionsAbcModule()
-    )
+Class collectionsAbcClass(string name) {
+    result.getName() = name and
+    result.getScope() = theCollectionsAbcModule()
 }

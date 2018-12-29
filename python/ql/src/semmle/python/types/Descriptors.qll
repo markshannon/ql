@@ -1,34 +1,16 @@
 import python
 private import semmle.python.pointsto.PointsTo
 
-/** A bound method object, x.f where type(x) has a method f */
-class BoundMethod extends Object {
-
-    BoundMethod() {
-        bound_method(this, _)
-    }
-
-    /* Gets the method 'f' in 'x.f' */
-    FunctionObject getMethod() {
-         bound_method(this, result)
-    }
-
-}
-
-private predicate bound_method(AttrNode binding, FunctionObject method) {
-    binding = method.getAMethodCall().getFunction()
-}
-
-private predicate decorator_call(Object method, ClassObject decorator, FunctionObject func) {
+private predicate decorator_call(SourceObject method, ClassObject decorator, FunctionObject func) {
     exists(CallNode f |
-        method = f and
-        f.getFunction().refersTo(decorator) and
+        method.getFlowOrigin() = f and
+        PointsTo::points_to(f.getFunction(), _, decorator, _, _) and
         PointsTo::points_to(f.getArg(0), _, func, _, _)
     )
 }
 
 /** A class method object. Either a decorated function or an explicit call to classmethod(f) */ 
-class ClassMethodObject extends Object {
+class ClassMethodObject extends SourceObject {
 
     ClassMethodObject() {
         PointsTo::class_method(this, _)
@@ -42,10 +24,26 @@ class ClassMethodObject extends Object {
         PointsTo::class_method_call(this, _, _, _, result)
     }
 
+    override boolean isClass() {
+        result = false
+    }
+
+    override boolean booleanValue() { result = true }
+
+    override predicate maybe() { none() }
+
+    override ClassObject getAnInferredType() {
+        result = theClassMethodType()
+    }
+
+    override boolean isComparable() {
+        result = true
+    }
+
 }
 
 /** A static method object. Either a decorated function or an explicit call to staticmethod(f) */ 
-class StaticMethodObject extends Object {
+class StaticMethodObject extends SourceObject {
 
     StaticMethodObject() {
         decorator_call(this, theStaticMethodType(), _)
@@ -53,6 +51,22 @@ class StaticMethodObject extends Object {
 
     FunctionObject getFunction() {
         decorator_call(this, theStaticMethodType(), result)
+    }
+
+    override boolean isClass() {
+        result = false
+    }
+
+    override boolean booleanValue() { result = true }
+
+    override predicate maybe() { none() }
+
+    override ClassObject getAnInferredType() {
+        result = theStaticMethodType()
+    }
+
+    override boolean isComparable() {
+        result = true
     }
 
 }

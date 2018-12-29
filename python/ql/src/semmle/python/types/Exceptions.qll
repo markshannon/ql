@@ -263,9 +263,9 @@ class ExceptFlowNode extends ControlFlowNode {
     private predicate handledObject(Object obj, ClassObject cls, ControlFlowNode origin) {
         this.getType().refersTo(obj, cls, origin)
         or
-        exists(Object tup |
+        exists(SourceTupleObject tup |
             this.handledObject(tup, theTupleType(), _) |
-            element_from_tuple(tup).refersTo(obj, cls, origin)
+            tup.getSourceElement(_).refersTo(obj, cls, origin)
         )
     }
 
@@ -286,12 +286,6 @@ class ExceptFlowNode extends ControlFlowNode {
         )
     }
 
-}
-
-private ControlFlowNode element_from_tuple(Object tuple) {
-    exists(Tuple t |
-        t = tuple.getOrigin() and result = t.getAnElt().getAFlowNode()
-    )
 }
 
 /** A Reraising node is the node at the end of a finally block (on the exceptional branch)

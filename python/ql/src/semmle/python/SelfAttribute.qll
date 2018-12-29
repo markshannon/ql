@@ -85,12 +85,12 @@ class SelfAttributeStore extends SelfAttribute {
 
 }
 
-private Object object_getattribute() {
-    py_cmembers_versioned(theObjectType(), "__getattribute__", result, major_version().toString())
+private BuiltinObject object_getattribute() {
+    py_cmembers_versioned(theObjectType().getRaw(), "__getattribute__", result.getRaw(), major_version().toString())
 }
 
 /** Helper class for UndefinedClassAttribute.ql and MaybeUndefinedClassAttribute.ql */
-class CheckClass extends ClassObject {
+class CheckClass extends SourceClassObject {
 
     private predicate ofInterest() {
         not this.unknowableAttributes() and

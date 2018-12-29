@@ -173,7 +173,7 @@ class Class extends Class_, Scope, AstNode {
 
     /** Gets the ClassObject corresponding to this class */
     ClassObject getClassObject() {
-        result.getOrigin() = this.getParent()
+        result.(SourceObject).getOrigin() = this.getParent()
     }
 
     /** Gets the nth base of this class definition. */

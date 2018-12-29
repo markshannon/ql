@@ -3,10 +3,10 @@ private import semmle.python.pointsto.PointsTo
 private import semmle.python.pointsto.Base
 private import semmle.python.pointsto.MRO as MRO
 
-predicate is_c_metaclass(Object o) {
+predicate is_c_metaclass(@py_cobject o) {
     py_special_objects(o, "type")
     or
-    exists(Object sup | py_cmembers_versioned(o, ".super.", sup, major_version().toString()) and is_c_metaclass(sup))
+    exists(@py_cobject sup | py_cmembers_versioned(o, ".super.", sup, major_version().toString()) and is_c_metaclass(sup))
 }
 
 
@@ -46,11 +46,6 @@ module Origin {
         result = UnknownOrigin()
     }
 
-    Origin fromObject(Object obj) {
-        result = SourceOrigin(obj.(ControlFlowNode))
-        or
-        not obj instanceof ControlFlowNode and result = UnknownOrigin()
-    }
 }
 
 /** A class whose instances represents Python classes.
@@ -66,38 +61,15 @@ module Origin {
  *  does not guarantee that such a class will ever exist in the 
  *  running program.
  */
-class ClassObject extends Object {
-
-    ClassObject() {
-        this.getOrigin() instanceof ClassExpr or
-        py_cobjecttypes(_, this) or
-        exists(Object meta | py_cobjecttypes(this, meta) and is_c_metaclass(meta)) or
-        py_special_objects(this, "_semmle_unknown_type")
-    }
-
-    private predicate isStr() {
-        py_special_objects(this, "bytes") and major_version() = 2
-        or
-        py_special_objects(this, "unicode") and major_version() = 3
-    }
+abstract class ClassObject extends Object {
 
     /** Gets the short (unqualified) name of this class */
-    string getName() {
-        this.isStr() and result = "str"
-        or
-        not this.isStr() and py_cobjectnames(this, result) and not this = theUnknownType()
-        or
-        result = this.getPyClass().getName()
-    }
+    abstract string getName();
 
     /** Gets the qualified name for this class.
      * Should return the same name as the `__qualname__` attribute on classes in Python 3.
      */
-    string getQualifiedName() {
-        py_cobjectnames(this, _) and result = this.getName()
-        or
-        result = this.getPyClass().getQualifiedName()
-    }
+    abstract string getQualifiedName();
 
     /** Gets the nth base class of this class */
     Object getBaseType(int n) {
@@ -111,10 +83,10 @@ class ClassObject extends Object {
 
     /** Whether this class has a base class */
     predicate hasABase() {
-        exists(ClassExpr cls | this.getOrigin() = cls | exists(cls.getABase()))
+        exists(ClassExpr cls | this.(SourceObject).getOrigin() = cls | exists(cls.getABase()))
         or
         /* The extractor uses the special name ".super." to indicate the super class of a builtin class */
-        py_cmembers_versioned(this, ".super.", _, major_version().toString())
+        py_cmembers_versioned(this.(BuiltinClassObject).getRaw(), ".super.", _, major_version().toString())
     }
 
     /** Gets a super class of this class (includes transitive super classes) */
@@ -156,6 +128,9 @@ class ClassObject extends Object {
     predicate declaresAttribute(string name) {
         class_declares_attribute(this, name)
     }
+
+    /** Returns an attribute declared on this class (not on a super-class) */
+    abstract boolean declaresAttributeBoolean(string name);
 
     /** Returns an attribute as it would be when looked up at runtime on this class.
       Will include attributes of super-classes */
@@ -266,16 +241,10 @@ class ClassObject extends Object {
         result = this.getPyClass()
     }
 
-    override string toString() {
-        this.isC() and result = "builtin-class " + this.getName() and not this = theUnknownType()
-        or
-        not this.isC() and result = "class " + this.getName()
-    }
-
     /* Method Resolution Order */
 
     /** Returns the next class in the MRO of 'this' after 'sup' */
-     ClassObject nextInMro(ClassObject sup) {
+    ClassObject nextInMro(ClassObject sup) {
         exists(MRO::ClassList mro, int i |
             mro = this.getMro() and
             sup = mro.getItem(i) and
@@ -422,11 +391,110 @@ class ClassObject extends Object {
         result.getFunction().refersTo(this)
     }
 
+    override boolean isClass() { result = true }
+
+}
+
+private predicate isStr(@py_cobject raw) {
+    py_special_objects(raw, "bytes") and major_version() = 2
+    or
+    py_special_objects(raw, "unicode") and major_version() = 3
+}
+
+class BuiltinClassObject extends ClassObject, BuiltinObject {
+
+    BuiltinClassObject() {
+        exists(@py_cobject raw |
+            this.(BuiltinObject).getRaw() = raw |
+            py_cobjecttypes(_, raw) or
+            exists(@py_cobject meta | py_cobjecttypes(raw, meta) and is_c_metaclass(meta))
+        )
+    }
+
+    override string getName() {
+        exists(@py_cobject raw |
+            this.(BuiltinObject).getRaw() = raw |
+            if isStr(raw) then
+                result = "str"
+            else
+                py_cobjectnames(raw, result)
+        )
+    }
+
+    override string toString() {
+        result = "class " + this.getName()
+    }
+
+    override predicate maybe() { none() }
+
+    override string getQualifiedName() {
+        py_cobjectnames(this.getRaw(), _) and result = this.getName()
+    }
+
+    override boolean declaresAttributeBoolean(string name) {
+        relevant_to_class_declares_names(this, name) and
+        exists(@py_cobject raw | raw = this.getRaw()
+            |
+            if builtin_class_defines_name(raw, name) then
+                result = true
+            else
+                result = false
+        )
+    }
+
+
+}
+
+class SourceClassObject extends ClassObject, SourceObject {
+
+    SourceClassObject() {
+        this.getOrigin() instanceof ClassExpr
+    }
+
+    override ClassObject getAnInferredType() {
+        result = PointsTo::Types::class_get_meta_class(this)
+    }
+
+    override string getName() {
+        result = this.getPyClass().getName()
+    }
+
+    override string toString() {
+        result = "builtin-class " + this.getName()
+    }
+
+    override predicate maybe() { none() }
+
+    override string getQualifiedName() {
+        result = this.getPyClass().getQualifiedName()
+    }
+
+    override boolean isComparable() {
+        result = true
+    }
+
+    override boolean declaresAttributeBoolean(string name) {
+        relevant_to_class_declares_names(this, name) and
+        exists(Class cls |
+            cls = this.getPyClass()
+            |
+            if class_defines_name(cls, name) then
+                result = true
+            else
+                result = false
+        )
+    }
+
+}
+
+/** Holds if the class defines name */
+private predicate class_defines_name(Class cls, string name) {
+    exists(SsaVariable var | name = var.getId() and var.getAUse() = cls.getANormalExit())
 }
 
 /** The 'str' class. This is the same as the 'bytes' class for
   * Python 2 and the 'unicode' class for Python 3 */
-ClassObject theStrType() {
+BuiltinClassObject theStrType() {
     if major_version() = 2 then
         result = theBytesType()
     else
@@ -450,175 +518,190 @@ ClassObject theAbcMetaClassObject() {
 /* Common builtin classes */
 
 /** The built-in class NoneType*/
-ClassObject theNoneType() {
-    py_special_objects(result, "NoneType")
+BuiltinClassObject theNoneType() {
+    py_special_objects(result.getRaw(), "NoneType")
 }
 
 /** The built-in class 'bool' */
-ClassObject theBoolType() {
-    py_special_objects(result, "bool")
+BuiltinClassObject theBoolType() {
+    py_special_objects(result.getRaw(), "bool")
 }
 
 /** The builtin class 'type' */
-ClassObject theTypeType() {
-    py_special_objects(result, "type")
+BuiltinClassObject theTypeType() {
+    py_special_objects(result.getRaw(), "type")
 }
 
 /** The builtin object ClassType (for old-style classes) */
-ClassObject theClassType() {
-    py_special_objects(result, "ClassType")
+BuiltinClassObject theClassType() {
+    py_special_objects(result.getRaw(), "ClassType")
 }
 
 /** The builtin object InstanceType (for old-style classes) */
-ClassObject theInstanceType() {
-    py_special_objects(result, "InstanceType")
+BuiltinClassObject theInstanceType() {
+    py_special_objects(result.getRaw(), "InstanceType")
 }
 
 /** The builtin class 'tuple' */
-ClassObject theTupleType() {
-    py_special_objects(result, "tuple")
+BuiltinClassObject theTupleType() {
+    py_special_objects(result.getRaw(), "tuple")
 }
 
 /** The builtin class 'int' */
-ClassObject theIntType() {
-    py_special_objects(result, "int")
+BuiltinClassObject theIntType() {
+    py_special_objects(result.getRaw(), "int")
 }
 
 /** The builtin class 'long' (Python 2 only) */
-ClassObject theLongType() {
-    py_special_objects(result, "long")
+BuiltinClassObject theLongType() {
+    py_special_objects(result.getRaw(), "long")
 }
 
 /** The builtin class 'float' */
-ClassObject theFloatType() {
-    py_special_objects(result, "float")
+BuiltinClassObject theFloatType() {
+    py_special_objects(result.getRaw(), "float")
 }
 
 /** The builtin class 'complex' */
-ClassObject theComplexType() {
-    py_special_objects(result, "complex")
+BuiltinClassObject theComplexType() {
+    py_special_objects(result.getRaw(), "complex")
 }
 
 /** The builtin class 'object' */
-ClassObject theObjectType() {
-    py_special_objects(result, "object")
+BuiltinClassObject theObjectType() {
+    py_special_objects(result.getRaw(), "object")
 }
 
 /** The builtin class 'list' */
-ClassObject theListType() {
+BuiltinClassObject theListType() {
+    py_special_objects(result.getRaw(), "list")
+}
+
+@py_cobject rawListType() {
     py_special_objects(result, "list")
 }
 
 /** The builtin class 'dict' */
+BuiltinClassObject theDictType() {
+    py_special_objects(result.getRaw(), "dict")
+}
 
-ClassObject theDictType() {
+@py_cobject rawDictType() {
     py_special_objects(result, "dict")
 }
 
 /** The builtin class 'Exception' */
 
-ClassObject theExceptionType() {
-    py_special_objects(result, "Exception")
+BuiltinClassObject theExceptionType() {
+    py_special_objects(result.getRaw(), "Exception")
 }
 
 /** The builtin class for unicode. unicode in Python2, str in Python3 */
-ClassObject theUnicodeType() {
-    py_special_objects(result, "unicode")
+BuiltinClassObject theUnicodeType() {
+    py_special_objects(result.getRaw(), "unicode")
 }
 
 /** The builtin class '(x)range' */
-ClassObject theRangeType() {
+BuiltinClassObject theRangeType() {
     result = builtin_object("xrange")
     or
     major_version() = 3 and result = builtin_object("range")
 }
 
 /** The builtin class for bytes. str in Python2, bytes in Python3 */
-ClassObject theBytesType() {
-    py_special_objects(result, "bytes")
+BuiltinClassObject theBytesType() {
+    py_special_objects(result.getRaw(), "bytes")
 }
 
 /** The builtin class 'set' */
-ClassObject theSetType() {
+BuiltinClassObject theSetType() {
+    py_special_objects(result.getRaw(), "set")
+}
+
+@py_cobject rawSetType() {
     py_special_objects(result, "set")
 }
 
 /** The builtin class 'property' */
-ClassObject thePropertyType() {
-    py_special_objects(result, "property")
+BuiltinClassObject thePropertyType() {
+    py_special_objects(result.getRaw(), "property")
 }
 
 /** The builtin class 'BaseException' */
-ClassObject theBaseExceptionType() {
-    py_special_objects(result, "BaseException")
+BuiltinClassObject theBaseExceptionType() {
+    py_special_objects(result.getRaw(), "BaseException")
 }
 
 /** The class of builtin-functions */
-ClassObject theBuiltinFunctionType() {
-    py_special_objects(result, "BuiltinFunctionType")
+BuiltinClassObject theBuiltinFunctionType() {
+    py_special_objects(result.getRaw(), "BuiltinFunctionType")
 }
 
 /** The class of Python functions */
-ClassObject thePyFunctionType() {
-    py_special_objects(result, "FunctionType")
+BuiltinClassObject thePyFunctionType() {
+    py_special_objects(result.getRaw(), "FunctionType")
 }
 
 /** The builtin class 'classmethod' */
-ClassObject theClassMethodType() {
-    py_special_objects(result, "ClassMethod")
+BuiltinClassObject theClassMethodType() {
+    py_special_objects(result.getRaw(), "ClassMethod")
 }
 
 /** The builtin class 'staticmethod' */
-ClassObject theStaticMethodType() {
-    py_special_objects(result, "StaticMethod")
+BuiltinClassObject theStaticMethodType() {
+    py_special_objects(result.getRaw(), "StaticMethod")
 }
 
 /** The class of modules */
-ClassObject theModuleType() {
+BuiltinClassObject theModuleType() {
+    py_special_objects(result.getRaw(), "ModuleType")
+}
+
+/** The class of modules */
+@py_cobject rawModuleType() {
     py_special_objects(result, "ModuleType")
 }
 
 /** The class of generators */
-ClassObject theGeneratorType() {
-    py_special_objects(result, "generator")
+BuiltinClassObject theGeneratorType() {
+    py_special_objects(result.getRaw(), "generator")
 }
 
 /** The builtin class 'TypeError' */
-ClassObject theTypeErrorType() {
-    py_special_objects(result, "TypeError")
+BuiltinClassObject theTypeErrorType() {
+    py_special_objects(result.getRaw(), "TypeError")
 }
 
 /** The builtin class 'AttributeError' */
-ClassObject theAttributeErrorType() {
-    py_special_objects(result, "AttributeError")
+BuiltinClassObject theAttributeErrorType() {
+    py_special_objects(result.getRaw(), "AttributeError")
 }
 
 /** The builtin class 'KeyError' */
-ClassObject theKeyErrorType() {
-    py_special_objects(result, "KeyError")
+BuiltinClassObject theKeyErrorType() {
+    py_special_objects(result.getRaw(), "KeyError")
 }
 
 /** The builtin class of bound methods */
 pragma [noinline]
-ClassObject theBoundMethodType() {
-    py_special_objects(result, "MethodType")
+BuiltinClassObject theBoundMethodType() {
+    py_special_objects(result.getRaw(), "MethodType")
 }
 
 /** The builtin class of builtin properties */
-ClassObject theGetSetDescriptorType() {
-     py_special_objects(result, "GetSetDescriptorType")
+BuiltinClassObject theGetSetDescriptorType() {
+     py_special_objects(result.getRaw(), "GetSetDescriptorType")
 }
 
 /** The method descriptor class */
-ClassObject theMethodDescriptorType() {
-    py_special_objects(result, "MethodDescriptorType")
+BuiltinClassObject theMethodDescriptorType() {
+    py_special_objects(result.getRaw(), "MethodDescriptorType")
 }
 
 /** The class of builtin properties */
 ClassObject theBuiltinPropertyType() {
-    /* This is CPython specific */ 
-    result.isC() and
-    result.getName() = "getset_descriptor"
+    /* This is CPython specific */
+    result = theGetSetDescriptorType()
 }
 
 /** The builtin class 'IOError' */
@@ -639,4 +722,16 @@ ClassObject theStopIterationType() {
 /** The builtin class 'NotImplementedError' */
 ClassObject theNotImplementedErrorType() {
     result = builtin_object("NotImplementedError")
+}
+
+
+
+private predicate relevant_to_class_declares_names(ClassObject cls, string name) {
+    exists(MRO::ClassList mro |
+        any(ClassObject c).getMro() = mro and
+        mro.getAnItem() = cls and
+        mro.getAnItem().declaresAttribute(name)
+    )
+    or
+    PointsTo::Types::interesting_attribute(cls, name)
 }

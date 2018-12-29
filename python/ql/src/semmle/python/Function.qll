@@ -95,8 +95,8 @@ class Function extends Function_, Scope, AstNode {
     }
 
     /** Gets the FunctionObject corresponding to this function */
-    FunctionObject getFunctionObject() {
-    		result.getOrigin() = this.getDefinition()
+    PyFunctionObject getFunctionObject() {
+        result.getOrigin() = this.getDefinition()
     }
 
     /** Whether this function is a procedure, that is, it has no explicit return statement and always returns None.
@@ -172,6 +172,14 @@ class Function extends Function_, Scope, AstNode {
     override
     predicate contains(AstNode inner) {
         Scope.super.contains(inner)
+    }
+
+    /** Gets a control flow node corresponding to the value of a return statement */
+    ControlFlowNode getAReturnedNode() {
+        exists(Return ret |
+            ret.getScope() = this and
+            result.getNode() = ret.getValue()
+        )
     }
 
 }

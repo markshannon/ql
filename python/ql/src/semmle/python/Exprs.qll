@@ -79,7 +79,7 @@ class Expr extends Expr_, AstNode {
      * `ControlFlowNode.refersTo(...)` instead.
      */
     predicate refersTo(Object value, ClassObject cls, AstNode origin) {
-        not py_special_objects(cls, "_semmle_unknown_type")
+        not cls = theUnknownType()
         and
         not value = unknownValue()
         and
@@ -89,7 +89,7 @@ class Expr extends Expr_, AstNode {
     /** Gets what this expression might "refer-to" in the given `context`.
      */
     predicate refersTo(Context context, Object value, ClassObject cls, AstNode origin) {
-        not py_special_objects(cls, "_semmle_unknown_type")
+        not cls = theUnknownType()
         and
         PointsTo::points_to(this.getAFlowNode(), context, value, cls, origin.getAFlowNode())
     }
@@ -307,9 +307,9 @@ class Bytes extends StrConst {
         not this.isUnicode()
     }
 
-    override Object getLiteralObject() {
-        py_cobjecttypes(result, theBytesType()) and
-        py_cobjectnames(result, this.quotedString())
+    override BuiltinObject getLiteralObject() {
+        py_cobjecttypes(result.getRaw(), theBytesType().getRaw()) and
+        py_cobjectnames(result.getRaw(), this.quotedString())
     }
 
     /** The extractor puts quotes into the name of each string (to prevent "0" clashing with 0).
@@ -340,7 +340,7 @@ class Ellipsis extends Ellipsis_ {
  */
 abstract class ImmutableLiteral extends Expr {
  
-    abstract Object getLiteralObject();
+    abstract BuiltinObject getLiteralObject();
 
     abstract boolean booleanValue();
 
@@ -377,10 +377,10 @@ class IntegerLiteral extends Num {
         result = "IntegerLiteral"
     }
 
-    override Object getLiteralObject() {
-        py_cobjecttypes(result, theIntType()) and py_cobjectnames(result, this.getN())
+    override BuiltinObject getLiteralObject() {
+        py_cobjecttypes(result.getRaw(), theIntType().getRaw()) and py_cobjectnames(result.getRaw(), this.getN())
         or
-        py_cobjecttypes(result, theLongType()) and py_cobjectnames(result, this.getN())   
+        py_cobjecttypes(result.getRaw(), theLongType().getRaw()) and py_cobjectnames(result.getRaw(), this.getN())
     }
 
     override boolean booleanValue() {
@@ -407,8 +407,8 @@ class FloatLiteral extends Num {
         result = "FloatLiteral"
     }
 
-    override Object getLiteralObject() {
-        py_cobjecttypes(result, theFloatType()) and py_cobjectnames(result, this.getN())   
+    override BuiltinObject getLiteralObject() {
+        py_cobjecttypes(result.getRaw(), theFloatType().getRaw()) and py_cobjectnames(result.getRaw(), this.getN())
     }
 
     override boolean booleanValue() {
@@ -439,8 +439,8 @@ class ImaginaryLiteral extends Num {
         result = "ImaginaryLiteral"
     }
 
-    override Object getLiteralObject() {
-        py_cobjecttypes(result, theComplexType()) and py_cobjectnames(result, this.getN())   
+    override BuiltinObject getLiteralObject() {
+        py_cobjecttypes(result.getRaw(), theComplexType().getRaw()) and py_cobjectnames(result.getRaw(), this.getN())
     }
 
     override boolean booleanValue() {
@@ -462,9 +462,9 @@ class Unicode extends StrConst {
         this.isUnicode()
     }
 
-    override Object getLiteralObject() {
-        py_cobjecttypes(result, theUnicodeType()) and
-        py_cobjectnames(result, this.quotedString())
+    override BuiltinObject getLiteralObject() {
+        py_cobjecttypes(result.getRaw(), theUnicodeType().getRaw()) and
+        py_cobjectnames(result.getRaw(), this.quotedString())
     }
 
     /** The extractor puts quotes into the name of each string (to prevent "0" clashing with 0).
@@ -502,7 +502,7 @@ class Dict extends Dict_ {
         result = this.getAValue() or result = this.getAKey()
     }
 
-    AstNode getAChildNode() {
+    override AstNode getAChildNode() {
         result = this.getAnItem()
     }
 
@@ -689,7 +689,7 @@ class StrConst extends Str_, ImmutableLiteral {
         this.getText() != "" and result = true
     }
 
-    override Object getLiteralObject() { none() }
+    override BuiltinObject getLiteralObject() { none() }
 
 }
 
@@ -739,7 +739,7 @@ class True extends BooleanLiteral {
         name_consts(this, "True")
     }
 
-    override Object getLiteralObject() {
+    override BuiltinObject getLiteralObject() {
         name_consts(this, "True") and result = theTrueObject() 
     }
 
@@ -756,7 +756,7 @@ class False extends BooleanLiteral {
         name_consts(this, "False")
     }
 
-    override Object getLiteralObject() {
+    override BuiltinObject getLiteralObject() {
         name_consts(this, "False") and result = theFalseObject()
     }
 
@@ -773,7 +773,7 @@ class None extends NameConstant {
         name_consts(this, "None")
     }
 
-    override Object getLiteralObject() {
+    override BuiltinObject getLiteralObject() {
         name_consts(this, "None") and result = theNoneObject()
     }
 

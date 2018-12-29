@@ -1,4 +1,5 @@
 import python
+private import semmle.python.pointsto.PointsTo
 
 /** A Python property:
  *     @property
@@ -8,12 +9,6 @@ import python
  *  Also any instances of types.GetSetDescriptorType (which are equivalent, but implemented in C)
  */
 abstract class PropertyObject extends Object {
-  
-    PropertyObject() {
-        property_getter(this, _)
-        or
-        py_cobjecttypes(this, theBuiltinPropertyType())
-    }
 
     /** Gets the name of this property */
     abstract string getName();
@@ -27,10 +22,6 @@ abstract class PropertyObject extends Object {
     /** Gets the deleter of this property */
     abstract Object getDeleter();
 
-    override string toString() {
-        result = "Property " + this.getName() 
-    }
-
     /** Whether this property is read-only. */
     predicate isReadOnly() {
         not exists(this.getSetter()) 
@@ -41,13 +32,17 @@ abstract class PropertyObject extends Object {
      * not the type of the property object which is types.PropertyType. */
     abstract ClassObject getInferredPropertyType();
 
+    override boolean booleanValue() { result = true }
+
+    override predicate maybe() { none() }
+
 }
 
 
-class PythonPropertyObject extends PropertyObject {
+class PythonPropertyObject extends PropertyObject, SourceObject {
 
     PythonPropertyObject() {
-        property_getter(this, _)
+        property_getter(this.getFlowOrigin(), _)
     }
 
     override string getName() {
@@ -56,7 +51,7 @@ class PythonPropertyObject extends PropertyObject {
 
     /** Gets the getter function of this property */
     override FunctionObject getGetter() {
-         property_getter(this, result)
+         property_getter(this.getFlowOrigin(), result)
     }
 
     override ClassObject getInferredPropertyType() {
@@ -65,29 +60,45 @@ class PythonPropertyObject extends PropertyObject {
 
     /** Gets the setter function of this property */
     override FunctionObject getSetter() {
-         property_setter(this, result)
+         property_setter(this.getFlowOrigin(), result)
     }
 
     /** Gets the deleter function of this property */
     override FunctionObject getDeleter() {
-         property_deleter(this, result)
+         property_deleter(this.getFlowOrigin(), result)
+    }
+
+    override string toString() {
+        result = "Property " + this.getName() 
+    }
+
+    override boolean isClass() {
+        result = false
+    }
+
+    override ClassObject getAnInferredType() {
+        result = thePropertyType()
+    }
+
+    override boolean isComparable() {
+        result = true
     }
 
 }
 
-class BuiltinPropertyObject extends PropertyObject {
+class BuiltinPropertyObject extends PropertyObject, BuiltinObject {
 
     BuiltinPropertyObject() {
-        py_cobjecttypes(this, theBuiltinPropertyType())
+        this.getBuiltinType() = theBuiltinPropertyType()
     }
 
     override string getName() {
-        py_cobjectnames(this, result)
+        py_cobjectnames(this.getRaw(), result)
     }
 
     /** Gets the getter method wrapper of this property */
     override Object getGetter() {
-         py_cmembers_versioned(this, "__get__", result, major_version().toString())
+         py_cmembers_versioned(this.getRaw(), "__get__", result.(BuiltinObject).getRaw(), major_version().toString())
     }
 
     override ClassObject getInferredPropertyType() {
@@ -96,28 +107,40 @@ class BuiltinPropertyObject extends PropertyObject {
 
     /** Gets the setter method wrapper of this property */
     override Object getSetter() {
-         py_cmembers_versioned(this, "__set__", result, major_version().toString())
+         py_cmembers_versioned(this.getRaw(), "__set__", result.(BuiltinObject).getRaw(), major_version().toString())
     }
 
     /** Gets the deleter method wrapper of this property */
     override Object getDeleter() {
-         py_cmembers_versioned(this, "__delete__", result, major_version().toString())
+         py_cmembers_versioned(this.getRaw(), "__delete__", result.(BuiltinObject).getRaw(), major_version().toString())
+    }
+
+    override string toString() {
+        result = "Property " + this.getName() 
+    }
+
+    override boolean isClass() {
+        result = false
     }
 
 }
 
 private predicate property_getter(CallNode decorated, FunctionObject getter) {
-    decorated.getFunction().refersTo(thePropertyType())
-    and
-    decorated.getArg(0).refersTo(getter)
+    PointsTo::points_to(decorated.getFunction(), _, thePropertyType(), _, _) and
+    PointsTo::points_to(decorated.getArg(0), _, getter, _, _)
+}
+
+private predicate refersTo(ControlFlowNode f, Object o) {
+    PointsTo::points_to(f, _, o, _, _)
 }
 
 private predicate property_setter(CallNode decorated, FunctionObject setter) {
     property_getter(decorated, _)
     and
-    exists(CallNode setter_call, AttrNode prop_setter |
-        prop_setter.getObject("setter").refersTo((Object)decorated) |
-        setter_call.getArg(0).refersTo(setter)
+    exists(CallNode setter_call, AttrNode prop_setter, SourceObject decobj |
+        refersTo(prop_setter.getObject("setter"), decobj) and
+        decorated = decobj.getFlowOrigin() |
+        refersTo(setter_call.getArg(0), setter)
         and
         setter_call.getFunction() = prop_setter
     )
@@ -130,15 +153,16 @@ private predicate property_setter(CallNode decorated, FunctionObject setter) {
 private predicate property_deleter(CallNode decorated, FunctionObject deleter) {
     property_getter(decorated, _)
     and
-    exists(CallNode deleter_call, AttrNode prop_deleter |
-        prop_deleter.getObject("deleter").refersTo((Object)decorated) |
-        deleter_call.getArg(0).refersTo(deleter)
+    exists(CallNode deleter_call, AttrNode prop_deleter, SourceObject decobj |
+        refersTo(prop_deleter.getObject("deleter"), decobj) and
+        decorated = decobj.getFlowOrigin() |
+        refersTo(prop_deleter.getObject("deleter"), deleter)
         and
         deleter_call.getFunction() = prop_deleter
     )
     or
-    decorated.getFunction().refersTo(thePropertyType())
+    refersTo(decorated.getFunction(), thePropertyType())
     and
-    decorated.getArg(2).refersTo(deleter)
+    refersTo(decorated.getArg(2), deleter)
 }
 

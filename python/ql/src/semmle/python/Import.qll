@@ -14,7 +14,7 @@ class Alias extends Alias_ {
 private predicate valid_module_name(string name) {
     exists(Module m | m.getName() = name)
     or
-    exists(Object cmod | py_cobjecttypes(cmod, theModuleType()) and py_cobjectnames(cmod, name))
+    exists(@py_cobject cmod | py_cobjecttypes(cmod, rawModuleType()) and py_cobjectnames(cmod, name))
 }
 
 /** An artificial expression representing an import */
