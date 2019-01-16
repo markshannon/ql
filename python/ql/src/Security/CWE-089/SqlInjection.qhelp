@@ -3,21 +3,7 @@
   "qhelp.dtd">
 <qhelp>
 
-<overview>
-<p>
-If a database query (such as a SQL or NoSQL query) is built from
-user-provided data without sufficient sanitization, a user
-may be able to run malicious database queries.
-</p>
-</overview>
-
-<recommendation>
-<p>
-Most database connector libraries offer a way of safely
-embedding untrusted data into a query by means of query parameters
-or prepared statements.
-</p>
-</recommendation>
+  <include src="SqlInjectionCommon.qhelp" />
 
 <example>
 <p>
@@ -40,8 +26,7 @@ to the database using query parameters.
 <sample src="examples/sql_injection.py" />
 </example>
 
-<references>
-<li>Wikipedia: <a href="https://en.wikipedia.org/wiki/SQL_injection">SQL injection</a>.</li>
-<li>OWASP: <a href="https://www.owasp.org/index.php/SQL_Injection_Prevention_Cheat_Sheet">SQL Injection Prevention Cheat Sheet</a>.</li>
-</references>
+
+  <include src="SqlInjectionReferences.qhelp" />
 </qhelp>
+

@@ -1,0 +1,21 @@
+<!DOCTYPE qhelp PUBLIC
+  "-//Semmle//qhelp//EN"
+  "qhelp.dtd">
+<qhelp>
+
+  <include src="SqlInjectionCommon.qhelp" />
+
+<example>
+<p>
+In the following snippet, a SQL command is constructed from a user-supplied request attribute.
+The parameter may include quote characters, so this
+code is vulnerable to a SQL injection attack.
+</p>
+
+<sample src="examples/possible_sql_injection.py" />
+</example>
+
+
+  <include src="SqlInjectionReferences.qhelp" />
+</qhelp>
+

@@ -1,0 +1,22 @@
+<!DOCTYPE qhelp PUBLIC
+  "-//Semmle//qhelp//EN"
+  "qhelp.dtd">
+<qhelp>
+
+<overview>
+<p>
+If a database query (such as a SQL or NoSQL query) is built from
+user-provided data without sufficient sanitization, a user
+may be able to run malicious database queries.
+</p>
+</overview>
+
+<recommendation>
+<p>
+Most database connector libraries offer a way of safely
+embedding untrusted data into a query by means of query parameters
+or prepared statements.
+</p>
+</recommendation>
+
+</qhelp>

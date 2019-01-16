@@ -8,14 +8,9 @@ edges
 | sql_injection.py:13:16:13:39 | externally controlled string | sql_injection.py:21:55:21:58 | externally controlled string |
 | sql_injection.py:13:16:13:39 | externally controlled string | sql_injection.py:22:43:22:46 | externally controlled string |
 | sql_injection.py:13:16:13:39 | externally controlled string | sql_injection.py:23:45:23:48 | externally controlled string |
-| sql_injection.py:14:16:14:34 | django.db.connection.cursor | sql_injection.py:16:9:16:12 | django.db.connection.cursor |
-| sql_injection.py:14:16:14:34 | django.db.connection.cursor | sql_injection.py:18:9:18:12 | django.db.connection.cursor |
 | sql_injection.py:18:39:18:42 | externally controlled string | sql_injection.py:18:22:18:42 | externally controlled string |
-| sql_injection.py:21:9:21:20 | django.db.models.Model.objects | sql_injection.py:21:9:21:60 | django.db.models.Model.objects |
 | sql_injection.py:21:55:21:58 | externally controlled string | sql_injection.py:21:38:21:58 | externally controlled string |
-| sql_injection.py:22:9:22:20 | django.db.models.Model.objects | sql_injection.py:22:9:22:47 | django.db.models.Model.objects |
 | sql_injection.py:22:43:22:46 | externally controlled string | sql_injection.py:22:26:22:46 | externally controlled string |
-| sql_injection.py:23:9:23:20 | django.db.models.Model.objects | sql_injection.py:23:9:23:49 | django.db.models.Model.objects |
 | sql_injection.py:23:45:23:48 | externally controlled string | sql_injection.py:23:28:23:48 | externally controlled string |
 | sql_injection.py:28:21:28:27 | django.request.HttpRequest | sql_injection.py:30:8:30:14 | django.request.HttpRequest |
 | sql_injection.py:28:21:28:27 | django.request.HttpRequest | sql_injection.py:31:16:31:22 | django.request.HttpRequest |
@@ -25,7 +20,4 @@ edges
 | sql_injection.py:32:66:32:69 | externally controlled string | sql_injection.py:32:16:32:69 | externally controlled string |
 parents
 #select
-| sql_injection.py:18:22:18:42 | db.connection.execute | sql_injection.py:9:15:9:21 | django.request.HttpRequest | sql_injection.py:18:22:18:42 | externally controlled string | This SQL query depends on $@. | sql_injection.py:9:15:9:21 | Django request source | a user-provided value |
-| sql_injection.py:21:38:21:58 | django.db.models.expressions.RawSQL(sink,...) | sql_injection.py:9:15:9:21 | django.request.HttpRequest | sql_injection.py:21:38:21:58 | externally controlled string | This SQL query depends on $@. | sql_injection.py:9:15:9:21 | Django request source | a user-provided value |
-| sql_injection.py:22:26:22:46 | django.models.QuerySet.raw(sink,...) | sql_injection.py:9:15:9:21 | django.request.HttpRequest | sql_injection.py:22:26:22:46 | externally controlled string | This SQL query depends on $@. | sql_injection.py:9:15:9:21 | Django request source | a user-provided value |
-| sql_injection.py:23:28:23:48 | django.models.QuerySet.extra(sink,...) | sql_injection.py:9:15:9:21 | django.request.HttpRequest | sql_injection.py:23:28:23:48 | externally controlled string | This SQL query depends on $@. | sql_injection.py:9:15:9:21 | Django request source | a user-provided value |
+| sql_injection.py:32:66:32:69 | simple SQL string injection | sql_injection.py:28:21:28:27 | django.request.HttpRequest | sql_injection.py:32:66:32:69 | externally controlled string | This SQL query depends on $@. | sql_injection.py:28:21:28:27 | Django request source | a user-provided value |

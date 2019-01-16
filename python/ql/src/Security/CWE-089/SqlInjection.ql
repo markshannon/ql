@@ -22,7 +22,8 @@ import semmle.python.security.injection.Sql
 import semmle.python.web.django.Db
 import semmle.python.web.django.Model
 
+import SQL
 
 from TaintedPathSource src, TaintedPathSink sink
-where src.flowsTo(sink)
+where src.flowsTo(sink) and not probable_sql_command(sink.getSink(), _)
 select sink.getSink(), src, sink, "This SQL query depends on $@.", src.getSource(), "a user-provided value"
