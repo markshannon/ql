@@ -497,11 +497,6 @@ ClassObject theDictType() {
     result = ClassObject::dict()
 }
 
-/** The builtin class 'Exception' */
-ClassObject theExceptionType() {
-    py_special_objects(result, "Exception")
-}
-
 /** DEPRECATED -- Use `ClassObject::unicode()` instead. */
 deprecated
 ClassObject theUnicodeType() {
@@ -532,9 +527,16 @@ ClassObject thePropertyType() {
     result = ClassObject::property()
 }
 
-/** The builtin class 'BaseException' */
+/** DEPRECATED -- Use `Exceptions::baseException()` instead. */
+deprecated
 ClassObject theBaseExceptionType() {
-    py_special_objects(result, "BaseException")
+    result = Exceptions::baseException()
+}
+
+/** DEPRECATED -- Use `Exceptions::exception()` instead. */
+deprecated
+ClassObject theExceptionType() {
+    result = Exceptions::exception()
 }
 
 /** DEPRECATED -- Use `ClassObject::builtin-functions */
@@ -573,19 +575,22 @@ ClassObject theGeneratorType() {
     result = ClassObject::generator()
 }
 
-/** The builtin class 'TypeError' */
+/** DEPRECATED -- Use `Exceptions::typeError()` instead. */
+deprecated
 ClassObject theTypeErrorType() {
-    py_special_objects(result, "TypeError")
+    result = Exceptions::typeError()
 }
 
-/** The builtin class 'AttributeError' */
+/** DEPRECATED -- Use `Exceptions::attributeError()` instead. */
+deprecated
 ClassObject theAttributeErrorType() {
-    py_special_objects(result, "AttributeError")
+    result = Exceptions::attributeError()
 }
 
-/** The builtin class 'KeyError' */
+/** DEPRECATED -- Use `Exceptions::keyError()` instead. */
+deprecated
 ClassObject theKeyErrorType() {
-    py_special_objects(result, "KeyError")
+    result = Exceptions::keyError()
 }
 
 /** DEPRECATED -- Use `ClassObject::boundMethod()` instead. */
@@ -613,9 +618,10 @@ ClassObject theBuiltinPropertyType() {
     result = ClassObject::builtinProperty()
 }
 
-/** The builtin class 'IOError' */
+/** DEPRECATED -- Use `Exceptions::ioError()` instead. */
+deprecated
 ClassObject theIOErrorType() {
-    result = Object::builtin("IOError")
+    result = Exceptions::ioError()
 }
 
 /** The builtin class 'super' */
@@ -629,9 +635,10 @@ ClassObject theStopIterationType() {
     result = ClassObject::stopIteration()
 }
 
-/** The builtin class 'NotImplementedError' */
+/** DEPRECATED -- Use `Exceptions::notImplementedError()` instead. */
+deprecated
 ClassObject theNotImplementedErrorType() {
-    result = Object::builtin("NotImplementedError")
+    result = Exceptions::notImplementedError()
 }
 
 

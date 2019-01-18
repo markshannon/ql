@@ -54,7 +54,7 @@ class RaisingNode extends ControlFlowNode {
 
     pragma [noinline, nomagic]
     private ClassObject localRaisedType() {
-        result.isSubclassOf(theBaseExceptionType()) 
+        result.isSubclassOf(Exceptions::baseException())
         and
         (
           exists(ControlFlowNode ex |
@@ -64,7 +64,7 @@ class RaisingNode extends ControlFlowNode {
           or
           this.getNode() instanceof ImportExpr and result = Object::builtin("ImportError")
           or
-          this.getNode() instanceof Print and result = theIOErrorType()
+          this.getNode() instanceof Print and result = Exceptions::ioError()
           or
           exists(ExceptFlowNode except |
               except = this.getAnExceptionalSuccessor() and
@@ -76,19 +76,19 @@ class RaisingNode extends ControlFlowNode {
           and
           sequence_or_mapping(this) and result = theLookupErrorType()
           or
-          this.read_write_call() and result = theIOErrorType()
+          this.read_write_call() and result = Exceptions::ioError()
         )
     }
 
     pragma [noinline]
     ClassObject innateException() {
-        this.getNode() instanceof Attribute and result = theAttributeErrorType()
+        this.getNode() instanceof Attribute and result = Exceptions::attributeError()
         or
         this.getNode() instanceof Name and result = theNameErrorType()
         or
         this.getNode() instanceof Subscript and result = theIndexErrorType()
         or
-        this.getNode() instanceof Subscript and result = theKeyErrorType()
+        this.getNode() instanceof Subscript and result = Exceptions::keyError()
     }
 
     /** Whether this control flow node raises an exception, 
@@ -274,7 +274,7 @@ class ExceptFlowNode extends ControlFlowNode {
     predicate handledException(Object obj, ClassObject cls, ControlFlowNode origin) {
         this.handledObject(obj, cls, origin) and not cls = ClassObject::tuple()
         or
-        not exists(this.getNode().(ExceptStmt).getType()) and obj = theBaseExceptionType() and cls = ClassObject::type() and
+        not exists(this.getNode().(ExceptStmt).getType()) and obj = Exceptions::baseException() and cls = ClassObject::type() and
         origin = this
     }
 
