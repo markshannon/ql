@@ -51,14 +51,14 @@ class RangeIterationVariableFact extends CustomPointsToFact {
             iterable.getBasicBlock().dominates(this.(ControlFlowNode).getBasicBlock()) and
             f.getIter().getAFlowNode() = iterable and
             f.getTarget().getAFlowNode() = this and
-            PointsTo::points_to(iterable, _, theRangeType(), _, _)
+            PointsTo::points_to(iterable, _, ClassObject::range(), _, _)
         )
     }
 
     override predicate pointsTo(Context context, Object value, ClassObject cls, ControlFlowNode origin) {
         value = this and 
         origin = this and
-        cls = theIntType() and
+        cls = ClassObject::intType() and
         context.appliesTo(this)
     }
 }

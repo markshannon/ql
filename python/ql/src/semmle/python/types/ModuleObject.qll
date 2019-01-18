@@ -8,7 +8,7 @@ abstract class ModuleObject extends Object {
     ModuleObject () {
         exists(Module m | m.getEntryNode() = this)
         or
-        py_cobjecttypes(this, theModuleType())
+        py_cobjecttypes(this, ClassObject::moduleType())
     }
 
     /** Gets the scope corresponding to this module, if this is a Python module */
@@ -103,7 +103,7 @@ abstract class ModuleObject extends Object {
 class BuiltinModuleObject extends ModuleObject {
 
     BuiltinModuleObject () {
-        py_cobjecttypes(this, theModuleType())
+        py_cobjecttypes(this, ClassObject::moduleType())
     }
 
     override string getName() {

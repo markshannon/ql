@@ -17,7 +17,7 @@ string repr(Object o) {
      * `o = unknownValue() and result = "*UNKNOWN VALUE*"`
      */
     not o instanceof StringObject and not o = undefinedVariable() and not o = theUnknownType() and 
-    not o = theBoundMethodType() and result = o.toString()
+    not o = ClassObject::boundMethod() and result = o.toString()
     or
     o = undefinedVariable() and result = "*UNDEFINED*"
     or
@@ -26,5 +26,5 @@ string repr(Object o) {
     /* Work around differing names in 2/3 */
     result = "'" + o.(StringObject).getText() + "'"
     or
-    o = theBoundMethodType() and result = "builtin-class method"
+    o = ClassObject::boundMethod() and result = "builtin-class method"
 }

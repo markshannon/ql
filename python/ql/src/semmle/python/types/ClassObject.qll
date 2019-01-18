@@ -96,7 +96,7 @@ class ClassObject extends Object {
         not this.isNewStyle() or
         this.getAnImproperSuperType() = theBaseExceptionType()
         or
-        major_version() = 2 and this = theTupleType()
+        major_version() = 2 and this = ClassObject::tuple()
     }
 
     /** Gets the scope associated with this class, if it is not a builtin class */
@@ -217,7 +217,7 @@ class ClassObject extends Object {
             not exists(Expr outer | outer.getASubExpression+() = origin)
         )
         or
-        this = theNoneType() and result = theNoneObject()
+        this = ClassObject::noneType() and result = theNoneObject()
     }
 
     /** This class is only instantiated at one place in the code */
@@ -281,7 +281,7 @@ class ClassObject extends Object {
         )
         or
         /* This will be redundant when we have C class information */
-        this = theGeneratorType()
+        this = ClassObject::generator()
     }
 
     /** Holds if this class is an improper subclass of the other class.
@@ -315,15 +315,15 @@ class ClassObject extends Object {
         /* To determine whether something is a sequence or a mapping is not entirely clear,
          * so we need to guess a bit. 
          */
-        this.getAnImproperSuperType() = theTupleType()
+        this.getAnImproperSuperType() = ClassObject::tuple()
         or
-        this.getAnImproperSuperType() = theListType()
+        this.getAnImproperSuperType() = ClassObject::list()
         or
-        this.getAnImproperSuperType() = theRangeType()
+        this.getAnImproperSuperType() = ClassObject::range()
         or
-        this.getAnImproperSuperType() = theBytesType()
+        this.getAnImproperSuperType() = ClassObject::bytes()
         or
-        this.getAnImproperSuperType() = theUnicodeType()
+        this.getAnImproperSuperType() = ClassObject::unicode()
         or
         /* Does this inherit from abc.Sequence? */
         this.getASuperType().getName() = "Sequence"
@@ -395,9 +395,9 @@ class ClassObject extends Object {
   * Python 2 and the 'unicode' class for Python 3 */
 ClassObject theStrType() {
     if major_version() = 2 then
-        result = theBytesType()
+        result = ClassObject::bytes()
     else
-        result = theUnicodeType()
+        result = ClassObject::unicode()
 }
 
 private
@@ -417,51 +417,61 @@ ClassObject theAbcMetaClassObject() {
 /* Common builtin classes */
 
 /** DEPRECATED -- Use `ClassObject::noneType()` instead. */
+deprecated
 ClassObject theNoneType() {
     result = ClassObject::noneType()
 }
 
 /** DEPRECATED -- Use `ClassObject::bool()` instead. */
+deprecated
 ClassObject theBoolType() {
     result = ClassObject::bool()
 }
 
 /** DEPRECATED -- Use `ClassObject::type()` instead. */
+deprecated
 ClassObject theTypeType() {
     result = ClassObject::type()
 }
 
 /** DEPRECATED -- Use `ClassObject::classType()` instead. */
+deprecated
 ClassObject theClassType() {
     result = ClassObject::classType()
 }
 
 /** DEPRECATED -- Use `ClassObject::instanceType()` instead. */
+deprecated
 ClassObject theInstanceType() {
     result = ClassObject::instanceType()
 }
 
 /** DEPRECATED -- Use `ClassObject::tuple()` instead. */
+deprecated
 ClassObject theTupleType() {
     result = ClassObject::tuple()
 }
 
 /** DEPRECATED -- Use `ClassObject::intType()` instead. */
+deprecated
 ClassObject theIntType() {
     result = ClassObject::intType()
 }
 
 /** DEPRECATED -- Use `ClassObject::longType()` instead. */
+deprecated
 ClassObject theLongType() {
     result = ClassObject::longType()
 }
 
 /** DEPRECATED -- Use `ClassObject::floatType()` instead. */
+deprecated
 ClassObject theFloatType() {
     result = ClassObject::floatType()
 }
 
 /** DEPRECATED -- Use `ClassObject::complex()` instead. */
+deprecated
 ClassObject theComplexType() {
     result = ClassObject::complex()
 }
@@ -473,11 +483,13 @@ ClassObject theObjectType() {
 }
 
 /** DEPRECATED -- Use `ClassObject::list()` instead. */
+deprecated
 ClassObject theListType() {
     result = ClassObject::list()
 }
 
 /** DEPRECATED -- Use `ClassObject::dict()` instead. */
+deprecated
 ClassObject theDictType() {
     result = ClassObject::dict()
 }
@@ -488,26 +500,31 @@ ClassObject theExceptionType() {
 }
 
 /** DEPRECATED -- Use `ClassObject::unicode()` instead. */
+deprecated
 ClassObject theUnicodeType() {
     result = ClassObject::unicode()
 }
 
 /** DEPRECATED -- Use `ClassObject::range()` instead. */
+deprecated
 ClassObject theRangeType() {
     result = ClassObject::range()
 }
 
 /** DEPRECATED -- Use `ClassObject::bytes()` instead. */
+deprecated
 ClassObject theBytesType() {
     result = ClassObject::bytes()
 }
 
 /** DEPRECATED -- Use `ClassObject::set()` instead. */
+deprecated
 ClassObject theSetType() {
     result = ClassObject::set()
 }
 
 /** DEPRECATED -- Use `ClassObject::property()` instead. */
+deprecated
 ClassObject thePropertyType() {
     result = ClassObject::property()
 }
@@ -518,31 +535,37 @@ ClassObject theBaseExceptionType() {
 }
 
 /** DEPRECATED -- Use `ClassObject::builtin-functions */
+deprecated
 ClassObject theBuiltinFunctionType() {
     result = ClassObject::builtinFunction()
 }
 
 /** DEPRECATED -- Use `ClassObject::Python functions */
+deprecated
 ClassObject thePyFunctionType() {
     result = ClassObject::pythonFunction()
 }
 
 /** DEPRECATED -- Use `ClassObject::classmethod()` instead. */
+deprecated
 ClassObject theClassMethodType() {
     result = ClassObject::classmethod()
 }
 
 /** DEPRECATED -- Use `ClassObject::staticmethod()` instead. */
+deprecated
 ClassObject theStaticMethodType() {
     result = ClassObject::staticmethod()
 }
 
 /** DEPRECATED -- Use `ClassObject::moduleType()` instead. */
+deprecated
 ClassObject theModuleType() {
     result = ClassObject::moduleType()
 }
 
 /** DEPRECATED -- Use `ClassObject::generator()` instead. */
+deprecated
 ClassObject theGeneratorType() {
     result = ClassObject::generator()
 }
@@ -563,22 +586,26 @@ ClassObject theKeyErrorType() {
 }
 
 /** DEPRECATED -- Use `ClassObject::boundMethod()` instead. */
+deprecated
 pragma [noinline]
 ClassObject theBoundMethodType() {
-    py_special_objects(result, "MethodType")
+    result = ClassObject::boundMethod()
 }
 
 /** DEPRECATED -- Use `ClassObject::getSetDescriptor()` instead. */
+deprecated
 ClassObject theGetSetDescriptorType() {
     result = ClassObject::getSetDescriptorType()
 }
 
 /** DEPRECATED -- Use `ClassObject::methodDescriptor()` instead. */
+deprecated
 ClassObject theMethodDescriptorType() {
     result = ClassObject::methodDescriptor()
 }
 
 /** DEPRECATED -- Use `ClassObject::builtinProperty()` instead. */
+deprecated
 ClassObject theBuiltinPropertyType() {
     result = ClassObject::builtinProperty()
 }
@@ -594,6 +621,7 @@ ClassObject theSuperType() {
 }
 
 /** DEPRECATED -- Use `ClassObject::stopIteration()` instead. */
+deprecated
 ClassObject theStopIterationType() {
     result = ClassObject::stopIteration()
 }

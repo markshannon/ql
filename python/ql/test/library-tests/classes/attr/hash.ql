@@ -11,5 +11,5 @@ where cls.hasLocationInfo(_, line, _, _, _)
 and obj = cls.lookupAttribute("__hash__") and
 not cls.isC() and 
 not obj = ClassObject::object().lookupAttribute("__hash__") and 
-not obj = theTypeType().lookupAttribute("__hash__")
+not obj = ClassObject::type().lookupAttribute("__hash__")
 select line, cls.toString(), obj.toString()

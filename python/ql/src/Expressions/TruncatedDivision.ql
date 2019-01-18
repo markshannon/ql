@@ -21,8 +21,8 @@ where
     exists(BinaryExprNode bin, Object lobj, Object robj |
         bin = div.getAFlowNode()
         and bin.getNode().getOp() instanceof Div
-        and bin.getLeft().refersTo(lobj, theIntType(), left)
-        and bin.getRight().refersTo(robj, theIntType(), right)
+        and bin.getLeft().refersTo(lobj, ClassObject::intType(), left)
+        and bin.getRight().refersTo(robj, ClassObject::intType(), right)
         // Ignore instances where integer division leaves no remainder
         and not lobj.(NumericObject).intValue() % robj.(NumericObject).intValue() = 0
         and not bin.getNode().getEnclosingModule().hasFromFuture("division")

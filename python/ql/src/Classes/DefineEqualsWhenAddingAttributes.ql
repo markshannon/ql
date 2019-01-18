@@ -17,7 +17,7 @@ import Equality
 predicate class_stores_to_attribute(ClassObject cls, SelfAttributeStore store, string name) {
     exists(FunctionObject f | f = cls.declaredAttribute(_) and store.getScope() = f.getFunction() and store.getName() = name) and
     /* Exclude classes used as metaclasses */
-    not cls.getASuperType() = theTypeType()
+    not cls.getASuperType() = ClassObject::type()
 }
 
 predicate should_override_eq(ClassObject cls, Object base_eq) {

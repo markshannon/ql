@@ -23,7 +23,7 @@ predicate overrides_eq_or_cmp(ClassObject c) {
 predicate invalid_to_use_is_portably(ClassObject c) {
     overrides_eq_or_cmp(c) and
     /* Exclude type/builtin-function/bool as it is legitimate to compare them using 'is' but they implement __eq__ */
-    not c = theTypeType() and not c = theBuiltinFunctionType() and not c = theBoolType() and
+    not c = ClassObject::type() and not c = ClassObject::builtinFunction() and not c = ClassObject::bool() and
     /* OK to compare with 'is' if a singleton */
     not exists(c.getProbableSingletonInstance())
 }

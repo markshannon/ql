@@ -4,7 +4,7 @@ predicate string_attribute_all(ControlFlowNode n, string attr) {
     (n.getNode() instanceof Unicode or n.getNode() instanceof Bytes) and attr = "const"
     or
     exists(Object s |
-        n.refersTo(s, theBytesType(), _) and attr = "bytes" and
+        n.refersTo(s, ClassObject::bytes(), _) and attr = "bytes" and
         // We are only interested in bytes if they may cause an exception if
         // implicitly converted to unicode. ASCII is safe.
         not s.(StringObject).isAscii()
@@ -36,7 +36,7 @@ predicate string_attribute_any(ControlFlowNode n, string attr) {
         open_file(fd)
     )
     or
-    n.refersTo(_, theUnicodeType(), _) and attr = "unicode"
+    n.refersTo(_, ClassObject::unicode(), _) and attr = "unicode"
 }
 
 predicate tracked_object_any(ControlFlowNode obj, string attr) {

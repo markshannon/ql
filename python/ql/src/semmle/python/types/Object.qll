@@ -97,9 +97,9 @@ class Object extends @py_object {
         or
         result = string_literal(this.getOrigin())
         or
-        this.getOrigin() instanceof CallableExpr and result = thePyFunctionType()
+        this.getOrigin() instanceof CallableExpr and result = ClassObject::pythonFunction()
         or
-        this.getOrigin() instanceof Module and result = theModuleType()
+        this.getOrigin() instanceof Module and result = ClassObject::moduleType()
         or
         py_cobjecttypes(this, result)
     }
@@ -233,9 +233,9 @@ private Object findByName3(string longName) {
 class NumericObject extends Object {
 
     NumericObject() {
-         py_cobjecttypes(this, theIntType()) or 
-         py_cobjecttypes(this, theLongType()) or
-         py_cobjecttypes(this, theFloatType())
+         py_cobjecttypes(this, ClassObject::intType()) or 
+         py_cobjecttypes(this, ClassObject::longType()) or
+         py_cobjecttypes(this, ClassObject::floatType())
     }
 
     /** Gets the Boolean value that this object
@@ -254,14 +254,14 @@ class NumericObject extends Object {
 
     /** Gets the value of this object if it is a constant integer and it fits in a QL int */ 
     int intValue() {
-        (py_cobjecttypes(this, theIntType()) or py_cobjecttypes(this, theLongType()))
+        (py_cobjecttypes(this, ClassObject::intType()) or py_cobjecttypes(this, ClassObject::longType()))
         and
         exists(string s | py_cobjectnames(this, s) and result = s.toInt())
     }
 
     /** Gets the value of this object if it is a constant float */ 
     float floatValue() {
-        (py_cobjecttypes(this, theFloatType()))
+        (py_cobjecttypes(this, ClassObject::floatType()))
         and
         exists(string s | py_cobjectnames(this, s) and result = s.toFloat())
     }
@@ -270,7 +270,7 @@ class NumericObject extends Object {
     string repr() {
         exists(string s | 
             py_cobjectnames(this, s) |
-            if py_cobjecttypes(this, theLongType()) then
+            if py_cobjecttypes(this, ClassObject::longType()) then
                 result = s + "L"
             else
                 result = s
@@ -286,8 +286,8 @@ class NumericObject extends Object {
 class StringObject extends Object {
 
     StringObject() {
-        py_cobjecttypes(this, theUnicodeType()) or
-        py_cobjecttypes(this, theBytesType())
+        py_cobjecttypes(this, ClassObject::unicode()) or
+        py_cobjecttypes(this, ClassObject::bytes())
     }
 
     /** Whether this string is composed entirely of ascii encodable characters */
@@ -345,7 +345,7 @@ abstract class SequenceObject extends Object {
 class TupleObject extends SequenceObject {
 
     TupleObject() {
-        py_cobjecttypes(this, theTupleType())
+        py_cobjecttypes(this, ClassObject::tuple())
         or
         this instanceof TupleNode
         or
@@ -357,7 +357,7 @@ class TupleObject extends SequenceObject {
 module TupleObject {
 
     TupleObject empty() {
-        py_cobjecttypes(result, theTupleType()) and not py_citems(result, _, _)
+        py_cobjecttypes(result, ClassObject::tuple()) and not py_citems(result, _, _)
     }
 
 }
@@ -378,7 +378,7 @@ class NonEmptyTupleObject extends TupleObject {
 class ListObject extends SequenceObject {
 
     ListObject() {
-        py_cobjecttypes(this, theListType())
+        py_cobjecttypes(this, ClassObject::list())
         or
         this instanceof ListNode
     }
@@ -477,29 +477,29 @@ module Object {
 
 
 private ClassObject comprehension(Expr e) {
-    e instanceof ListComp and result = theListType()
+    e instanceof ListComp and result = ClassObject::list()
     or
-    e instanceof SetComp and result = theSetType()
+    e instanceof SetComp and result = ClassObject::set()
     or
-    e instanceof DictComp and result = theDictType()
+    e instanceof DictComp and result = ClassObject::dict()
     or
-    e instanceof GeneratorExp and result = theGeneratorType()
+    e instanceof GeneratorExp and result = ClassObject::generator()
 }
 
 private ClassObject collection_literal(Expr e) {
-    e instanceof List and result = theListType()
+    e instanceof List and result = ClassObject::list()
     or
-    e instanceof Set and result = theSetType()
+    e instanceof Set and result = ClassObject::set()
     or
-    e instanceof Dict and result = theDictType()
+    e instanceof Dict and result = ClassObject::dict()
     or
-    e instanceof Tuple and result = theTupleType()
+    e instanceof Tuple and result = ClassObject::tuple()
 }
 
 private ClassObject string_literal(Expr e) {
-    e instanceof Bytes and result = theBytesType()
+    e instanceof Bytes and result = ClassObject::bytes()
     or
-    e instanceof Unicode and result = theUnicodeType()
+    e instanceof Unicode and result = ClassObject::unicode()
 }
 
 Object theUnknownType() {

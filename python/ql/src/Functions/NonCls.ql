@@ -23,7 +23,7 @@ predicate first_arg_cls(Function f) {
 }
 
 predicate is_type_method(Function f) {
-    exists(ClassObject c | c.getPyClass() = f.getScope() and c.getASuperType() = theTypeType())
+    exists(ClassObject c | c.getPyClass() = f.getScope() and c.getASuperType() = ClassObject::type())
 }
 
 predicate classmethod_decorators_only(Function f) {
