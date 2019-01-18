@@ -32,7 +32,7 @@ private predicate named_attributes_not_method(ClassObject cls, string name) {
 
 /** Holds if `f` actually does something. */
 private predicate does_something(FunctionObject f) {
-    f.isBuiltin() and not f = theObjectType().lookupAttribute("__init__")
+    f.isBuiltin() and not f = ClassObject::object().lookupAttribute("__init__")
     or
     exists(Stmt s | s = f.getFunction().getAStmt() and not s instanceof Pass)
 }

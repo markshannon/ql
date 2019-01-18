@@ -25,7 +25,7 @@ predicate does_not_define_special_method(Class cls) {
 predicate no_inheritance(Class c) {
     not exists(ClassObject cls, ClassObject other |
         cls.getPyClass() = c and 
-        other != theObjectType() |
+        other != ClassObject::object() |
         other.getABaseType() = cls or
         cls.getABaseType() = other
     )

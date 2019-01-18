@@ -431,41 +431,49 @@ module BuiltinFunctionObject {
 
 
 /** DEPRECATED -- Use `BuiltinFunctionObject::apply()` instead. */
+deprecated
 Object theApplyFunction() {
     result = BuiltinFunctionObject::apply()
 }
 
 /** DEPRECATED -- Use `BuiltinFunctionObject::hasattr()` instead. */
+deprecated
 Object theHasattrFunction() {
     result = BuiltinFunctionObject::hasattr()
 }
 
 /** DEPRECATED -- Use `BuiltinFunctionObject::len()` instead. */
+deprecated
 Object theLenFunction() {
     result = BuiltinFunctionObject::len()
 }
 
 /** DEPRECATED -- Use `BuiltinFunctionObject::format()` instead. */
+deprecated
 Object theFormatFunction() {
     result = BuiltinFunctionObject::format()
 }
 
 /** DEPRECATED -- Use `BuiltinFunctionObject::open()` instead. */
+deprecated
 Object theOpenFunction() {
     result = BuiltinFunctionObject::open()
 }
 
 /** DEPRECATED -- Use `BuiltinFunctionObject::print()` instead. */
+deprecated
 Object thePrintFunction() {
     result = BuiltinFunctionObject::print()
 }
 
 /** DEPRECATED -- Use `BuiltinFunctionObject::input()` instead. */
+deprecated
 Object theInputFunction() {
     result = BuiltinFunctionObject::input()
 }
 
 /** DEPRECATED -- Use `BuiltinFunctionObject::locals()` instead. */
+deprecated
 Object theLocalsFunction() {
     result = BuiltinFunctionObject::locals()
 }
@@ -476,6 +484,7 @@ Object theGlobalsFunction() {
 }
 
 /** DEPRECATED -- Use `BuiltinFunctionObject::sysExit()` instead. */
+deprecated
 Object theExitFunctionObject() {
     result = BuiltinFunctionObject::sysExit()
 }

@@ -494,4 +494,3 @@ private ClassObject string_literal(Expr e) {
 Object theUnknownType() {
     py_special_objects(result, "_semmle_unknown_type")
 }
-

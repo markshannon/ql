@@ -86,7 +86,7 @@ class SelfAttributeStore extends SelfAttribute {
 }
 
 private Object object_getattribute() {
-    py_cmembers_versioned(theObjectType(), "__getattribute__", result, major_version().toString())
+    py_cmembers_versioned(ClassObject::object(), "__getattribute__", result, major_version().toString())
 }
 
 /** Helper class for UndefinedClassAttribute.ql and MaybeUndefinedClassAttribute.ql */
@@ -107,7 +107,7 @@ class CheckClass extends ClassObject {
         forall(ClassObject sup |
             sup = this.getAnImproperSuperType() and
             sup.declaresAttribute("__init__") and
-            not sup = theObjectType() |
+            not sup = ClassObject::object() |
             sup.declaredAttribute("__init__") instanceof PyFunctionObject
         )
     }

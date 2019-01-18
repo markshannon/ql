@@ -33,14 +33,14 @@ predicate overrides_ordering_method(ClassObject c, string name) {
         c.declaresAttribute(name)
         or
         exists(ClassObject sup | 
-            sup = c.getASuperType() and not sup = theObjectType() |
+            sup = c.getASuperType() and not sup = ClassObject::object() |
             sup.declaresAttribute(name)
         )
     )
 }
 
 string unimplemented_ordering(ClassObject c, int n) {
-    not c = theObjectType() and
+    not c = ClassObject::object() and
     not overrides_ordering_method(c, result) and 
     result = ordering_name(n)
 }

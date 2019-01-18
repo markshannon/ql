@@ -10,10 +10,10 @@ predicate comparison_using_is(Compare comp, ControlFlowNode left, Cmpop op, Cont
 predicate overrides_eq_or_cmp(ClassObject c) {
     major_version() = 2 and c.hasAttribute("__eq__")
     or
-    c.declaresAttribute("__eq__") and not c = theObjectType()
+    c.declaresAttribute("__eq__") and not c = ClassObject::object()
     or
     exists(ClassObject sup | 
-        sup = c.getASuperType() and not sup = theObjectType() |
+        sup = c.getASuperType() and not sup = ClassObject::object() |
         sup.declaresAttribute("__eq__")
     )
     or
