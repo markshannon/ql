@@ -2446,12 +2446,12 @@ module PointsTo {
             exists(ClassExpr cls_expr | cls.getOrigin() = cls_expr |
                 points_to(cls_expr.getBase(n).getAFlowNode(), _, result, _, _)
                 or
-                is_new_style(cls) and not exists(cls_expr.getBase(0)) and result = theObjectType() and n = 0
+                is_new_style(cls) and not exists(cls_expr.getBase(0)) and result = ClassObject::object() and n = 0
             )
             or
             result = builtin_base_type(cls) and n = 0
             or
-            cls = theUnknownType() and result = theObjectType() and n = 0
+            cls = theUnknownType() and result = ClassObject::object() and n = 0
         }
 
         private Object py_base_type(ClassObject cls, int n) {
@@ -2471,9 +2471,9 @@ module PointsTo {
                 is_new_style_bool(cls) = false and not exists(cls_expr.getBase(0)) and result = 0
             )
             or
-            cls = theObjectType() and result = 0
+            cls = ClassObject::object() and result = 0
             or
-            exists(builtin_base_type(cls)) and cls != theObjectType() and result = 1
+            exists(builtin_base_type(cls)) and cls != ClassObject::object() and result = 1
             or
             cls = theUnknownType() and result = 1
         }
@@ -2890,7 +2890,7 @@ module PointsTo {
 
         /** Holds if instances of class `cls` are always truthy. */
         cached predicate instances_always_true(ClassObject cls) {
-            cls = theObjectType()
+            cls = ClassObject::object()
             or
             instances_always_true(cls, 0) and
             not exists(string meth |

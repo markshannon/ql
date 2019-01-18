@@ -33,7 +33,7 @@ private predicate required_cons(ClassObject head, ClassList tail) {
         head = cls.getBaseType(n) and tail = bases(cls, n+1)
     )
     or
-    head = theObjectType() and tail = Empty()
+    head = ClassObject::object() and tail = Empty()
     or
     reverse_step(_, Cons(head, _), tail)
     or
@@ -409,7 +409,7 @@ private ClassList merge_of_linearization_of_bases(ClassObject cls) {
 }
 
 cached ClassList new_style_mro(ClassObject cls) {
-    cls = theObjectType() and result = Cons(cls, Empty())
+    cls = ClassObject::object() and result = Cons(cls, Empty())
     or
     result = Cons(cls, merge_of_linearization_of_bases(cls))
 }

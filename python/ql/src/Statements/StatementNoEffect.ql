@@ -65,7 +65,7 @@ predicate side_effecting_binary(Expr b) {
             not exists(ClassObject declaring |
                 declaring.declaresAttribute(method_name)
                 and declaring = cls.getAnImproperSuperType() and
-                declaring.isBuiltin() and not declaring = theObjectType()
+                declaring.isBuiltin() and not declaring = ClassObject::object()
             )
         )
     )

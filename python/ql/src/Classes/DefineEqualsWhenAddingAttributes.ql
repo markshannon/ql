@@ -26,7 +26,7 @@ predicate should_override_eq(ClassObject cls, Object base_eq) {
         not exists(GenericEqMethod eq | eq.getScope() = sup.getPyClass()) and
         not exists(IdentityEqMethod eq | eq.getScope() = sup.getPyClass()) and
         not base_eq.(FunctionObject).getFunction() instanceof IdentityEqMethod and
-        not base_eq = theObjectType().declaredAttribute("__eq__")
+        not base_eq = ClassObject::object().declaredAttribute("__eq__")
     )
 }
 

@@ -416,103 +416,100 @@ ClassObject theAbcMetaClassObject() {
 
 /* Common builtin classes */
 
-/** The built-in class NoneType*/
+/** DEPRECATED -- Use `ClassObject::noneType()` instead. */
 ClassObject theNoneType() {
-    py_special_objects(result, "NoneType")
+    result = ClassObject::noneType()
 }
 
-/** The built-in class 'bool' */
+/** DEPRECATED -- Use `ClassObject::bool()` instead. */
 ClassObject theBoolType() {
-    py_special_objects(result, "bool")
+    result = ClassObject::bool()
 }
 
-/** The builtin class 'type' */
+/** DEPRECATED -- Use `ClassObject::type()` instead. */
 ClassObject theTypeType() {
-    py_special_objects(result, "type")
+    result = ClassObject::type()
 }
 
-/** The builtin object ClassType (for old-style classes) */
+/** DEPRECATED -- Use `ClassObject::classType()` instead. */
 ClassObject theClassType() {
-    py_special_objects(result, "ClassType")
+    result = ClassObject::classType()
 }
 
-/** The builtin object InstanceType (for old-style classes) */
+/** DEPRECATED -- Use `ClassObject::instanceType()` instead. */
 ClassObject theInstanceType() {
-    py_special_objects(result, "InstanceType")
+    result = ClassObject::instanceType()
 }
 
-/** The builtin class 'tuple' */
+/** DEPRECATED -- Use `ClassObject::tuple()` instead. */
 ClassObject theTupleType() {
-    py_special_objects(result, "tuple")
+    result = ClassObject::tuple()
 }
 
-/** The builtin class 'int' */
+/** DEPRECATED -- Use `ClassObject::intType()` instead. */
 ClassObject theIntType() {
-    py_special_objects(result, "int")
+    result = ClassObject::intType()
 }
 
-/** The builtin class 'long' (Python 2 only) */
+/** DEPRECATED -- Use `ClassObject::longType()` instead. */
 ClassObject theLongType() {
-    py_special_objects(result, "long")
+    result = ClassObject::longType()
 }
 
-/** The builtin class 'float' */
+/** DEPRECATED -- Use `ClassObject::floatType()` instead. */
 ClassObject theFloatType() {
-    py_special_objects(result, "float")
+    result = ClassObject::floatType()
 }
 
-/** The builtin class 'complex' */
+/** DEPRECATED -- Use `ClassObject::complex()` instead. */
 ClassObject theComplexType() {
-    py_special_objects(result, "complex")
+    result = ClassObject::complex()
 }
 
-/** The builtin class 'object' */
+/** DEPRECATED -- Use `ClassObject::object()` instead. */
+deprecated
 ClassObject theObjectType() {
-    py_special_objects(result, "object")
+    result = ClassObject::object()
 }
 
-/** The builtin class 'list' */
+/** DEPRECATED -- Use `ClassObject::list()` instead. */
 ClassObject theListType() {
-    py_special_objects(result, "list")
+    result = ClassObject::list()
 }
 
-/** The builtin class 'dict' */
-
+/** DEPRECATED -- Use `ClassObject::dict()` instead. */
 ClassObject theDictType() {
-    py_special_objects(result, "dict")
+    result = ClassObject::dict()
 }
 
 /** The builtin class 'Exception' */
-
 ClassObject theExceptionType() {
     py_special_objects(result, "Exception")
 }
 
-/** The builtin class for unicode. unicode in Python2, str in Python3 */
+/** DEPRECATED -- Use `ClassObject::unicode()` instead. */
 ClassObject theUnicodeType() {
-    py_special_objects(result, "unicode")
+    result = ClassObject::unicode()
 }
 
-/** The builtin class '(x)range' */
+/** DEPRECATED -- Use `ClassObject::range()` instead. */
 ClassObject theRangeType() {
-    result = Object::builtin("xrange")
-    or
-    major_version() = 3 and result = Object::builtin("range")
+    result = ClassObject::range()
 }
 
-/** The builtin class for bytes. str in Python2, bytes in Python3 */
+/** DEPRECATED -- Use `ClassObject::bytes()` instead. */
 ClassObject theBytesType() {
-    py_special_objects(result, "bytes")
+    result = ClassObject::bytes()
 }
 
-/** The builtin class 'set' */
+/** DEPRECATED -- Use `ClassObject::set()` instead. */
 ClassObject theSetType() {
-    py_special_objects(result, "set")
+    result = ClassObject::set()
 }
 
-/** The builtin class 'property' */
+/** DEPRECATED -- Use `ClassObject::property()` instead. */
 ClassObject thePropertyType() {
-    py_special_objects(result, "property")
+    result = ClassObject::property()
 }
 
 /** The builtin class 'BaseException' */
@@ -520,34 +517,34 @@ ClassObject theBaseExceptionType() {
     py_special_objects(result, "BaseException")
 }
 
-/** The class of builtin-functions */
+/** DEPRECATED -- Use `ClassObject::builtin-functions */
 ClassObject theBuiltinFunctionType() {
-    py_special_objects(result, "BuiltinFunctionType")
+    result = ClassObject::builtinFunction()
 }
 
-/** The class of Python functions */
+/** DEPRECATED -- Use `ClassObject::Python functions */
 ClassObject thePyFunctionType() {
-    py_special_objects(result, "FunctionType")
+    result = ClassObject::pythonFunction()
 }
 
-/** The builtin class 'classmethod' */
+/** DEPRECATED -- Use `ClassObject::classmethod()` instead. */
 ClassObject theClassMethodType() {
-    py_special_objects(result, "ClassMethod")
+    result = ClassObject::classmethod()
 }
 
-/** The builtin class 'staticmethod' */
+/** DEPRECATED -- Use `ClassObject::staticmethod()` instead. */
 ClassObject theStaticMethodType() {
-    py_special_objects(result, "StaticMethod")
+    result = ClassObject::staticmethod()
 }
 
-/** The class of modules */
+/** DEPRECATED -- Use `ClassObject::moduleType()` instead. */
 ClassObject theModuleType() {
-    py_special_objects(result, "ModuleType")
+    result = ClassObject::moduleType()
 }
 
-/** The class of generators */
+/** DEPRECATED -- Use `ClassObject::generator()` instead. */
 ClassObject theGeneratorType() {
-    py_special_objects(result, "generator")
+    result = ClassObject::generator()
 }
 
 /** The builtin class 'TypeError' */
@@ -565,27 +562,25 @@ ClassObject theKeyErrorType() {
     py_special_objects(result, "KeyError")
 }
 
-/** The builtin class of bound methods */
+/** DEPRECATED -- Use `ClassObject::boundMethod()` instead. */
 pragma [noinline]
 ClassObject theBoundMethodType() {
     py_special_objects(result, "MethodType")
 }
 
-/** The builtin class of builtin properties */
+/** DEPRECATED -- Use `ClassObject::getSetDescriptor()` instead. */
 ClassObject theGetSetDescriptorType() {
-     py_special_objects(result, "GetSetDescriptorType")
+    result = ClassObject::getSetDescriptorType()
 }
 
-/** The method descriptor class */
+/** DEPRECATED -- Use `ClassObject::methodDescriptor()` instead. */
 ClassObject theMethodDescriptorType() {
-    py_special_objects(result, "MethodDescriptorType")
+    result = ClassObject::methodDescriptor()
 }
 
-/** The class of builtin properties */
+/** DEPRECATED -- Use `ClassObject::builtinProperty()` instead. */
 ClassObject theBuiltinPropertyType() {
-    /* This is CPython specific */ 
-    result.isC() and
-    result.getName() = "getset_descriptor"
+    result = ClassObject::builtinProperty()
 }
 
 /** The builtin class 'IOError' */
@@ -598,12 +593,167 @@ ClassObject theSuperType() {
     result = Object::builtin("super")
 }
 
-/** The builtin class 'StopIteration' */
+/** DEPRECATED -- Use `ClassObject::stopIteration()` instead. */
 ClassObject theStopIterationType() {
-    result = Object::builtin("StopIteration")
+    result = ClassObject::stopIteration()
 }
 
 /** The builtin class 'NotImplementedError' */
 ClassObject theNotImplementedErrorType() {
     result = Object::builtin("NotImplementedError")
 }
+
+
+module ClassObject {
+
+    /** The built-in class NoneType*/
+    ClassObject noneType() {
+        py_special_objects(result, "NoneType")
+    }
+
+    /** The built-in class 'bool' */
+    ClassObject bool() {
+        py_special_objects(result, "bool")
+    }
+
+    /** The builtin class 'type' */
+    ClassObject type() {
+        py_special_objects(result, "type")
+    }
+
+    /** The builtin object ClassType (for old-style classes) */
+    ClassObject classType() {
+        py_special_objects(result, "ClassType")
+    }
+
+    /** The builtin object InstanceType (for old-style classes) */
+    ClassObject instanceType() {
+        py_special_objects(result, "InstanceType")
+    }
+
+    /** The builtin class 'tuple' */
+    ClassObject tuple() {
+        py_special_objects(result, "tuple")
+    }
+
+    /** The builtin class 'int' */
+    ClassObject intType() {
+        py_special_objects(result, "int")
+    }
+
+    /** The builtin class 'long' (Python 2 only) */
+    ClassObject longType() {
+        py_special_objects(result, "long")
+    }
+
+    /** The builtin class 'float' */
+    ClassObject floatType() {
+        py_special_objects(result, "float")
+    }
+
+    /** The builtin class 'complex' */
+    ClassObject complex() {
+        py_special_objects(result, "complex")
+    }
+
+    /** The builtin class 'object' */
+    ClassObject object() {
+        py_special_objects(result, "object")
+    }
+
+    /** The builtin class 'list' */
+    ClassObject list() {
+        py_special_objects(result, "list")
+    }
+
+    /** The builtin class 'dict' */
+    ClassObject dict() {
+        py_special_objects(result, "dict")
+    }
+
+    ClassObject moduleType() {
+        py_special_objects(result, "ModuleType")
+    }
+
+    /** The builtin class for unicode. unicode in Python2, str in Python3 */
+    ClassObject unicode() {
+        py_special_objects(result, "unicode")
+    }
+
+    /** The builtin class '(x)range' */
+    ClassObject range() {
+        result = Object::builtin("xrange")
+        or
+        major_version() = 3 and result = Object::builtin("range")
+    }
+
+    /** The builtin class for bytes. str in Python2, bytes in Python3 */
+    ClassObject bytes() {
+        py_special_objects(result, "bytes")
+    }
+
+    /** The builtin class 'set' */
+    ClassObject set() {
+        py_special_objects(result, "set")
+    }
+
+    /** The builtin class 'property' */
+    ClassObject property() {
+        py_special_objects(result, "property")
+    }
+
+    /** The class of builtin-functions */
+    ClassObject builtinFunction() {
+        py_special_objects(result, "BuiltinFunctionType")
+    }
+
+    /** The class of Python functions */
+    ClassObject pythonFunction() {
+        py_special_objects(result, "FunctionType")
+    }
+
+    /** The builtin class 'classmethod' */
+    ClassObject classmethod() {
+        py_special_objects(result, "ClassMethod")
+    }
+
+    /** The builtin class 'staticmethod' */
+    ClassObject staticmethod() {
+        py_special_objects(result, "StaticMethod")
+    }
+
+    /** The class of generators */
+    ClassObject generator() {
+        py_special_objects(result, "generator")
+    }
+
+    /** The builtin class of bound methods */
+    pragma [noinline]
+    ClassObject boundMethod() {
+        py_special_objects(result, "MethodType")
+    }
+
+    /** The builtin class of builtin properties */
+    ClassObject getSetDescriptorType() {
+         py_special_objects(result, "GetSetDescriptorType")
+    }
+
+    /** The method descriptor class */
+    ClassObject methodDescriptor() {
+        py_special_objects(result, "MethodDescriptorType")
+    }
+
+    /** The class of builtin properties */
+    ClassObject builtinProperty() {
+        /* This is CPython specific */ 
+        result.isC() and
+        result.getName() = "getset_descriptor"
+    }
+
+    /** The builtin class 'StopIteration' */
+    ClassObject stopIteration() {
+        result = Object::builtin("StopIteration")
+    }
+
+}
+

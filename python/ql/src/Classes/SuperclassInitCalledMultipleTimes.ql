@@ -14,7 +14,7 @@ import python
 import MethodCallOrder
 
 from ClassObject self, FunctionObject multi
-where multi != theObjectType().lookupAttribute("__init__") and
+where multi != ClassObject::object().lookupAttribute("__init__") and
 multiple_calls_to_superclass_method(self, multi, "__init__") and
 not multiple_calls_to_superclass_method(self.getABaseType(), multi, "__init__") and
 not exists(FunctionObject better |
