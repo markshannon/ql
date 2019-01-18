@@ -12,7 +12,7 @@ abstract class PropertyObject extends Object {
     PropertyObject() {
         property_getter(this, _)
         or
-        py_cobjecttypes(this, theBuiltinPropertyType())
+        py_cobjecttypes(this, ClassObject::builtinProperty())
     }
 
     /** Gets the name of this property */
@@ -78,7 +78,7 @@ class PythonPropertyObject extends PropertyObject {
 class BuiltinPropertyObject extends PropertyObject {
 
     BuiltinPropertyObject() {
-        py_cobjecttypes(this, theBuiltinPropertyType())
+        py_cobjecttypes(this, ClassObject::builtinProperty())
     }
 
     override string getName() {
@@ -107,7 +107,7 @@ class BuiltinPropertyObject extends PropertyObject {
 }
 
 private predicate property_getter(CallNode decorated, FunctionObject getter) {
-    decorated.getFunction().refersTo(thePropertyType())
+    decorated.getFunction().refersTo(ClassObject::property())
     and
     decorated.getArg(0).refersTo(getter)
 }
@@ -122,7 +122,7 @@ private predicate property_setter(CallNode decorated, FunctionObject setter) {
         setter_call.getFunction() = prop_setter
     )
     or
-    decorated.getFunction().refersTo(thePropertyType())
+    decorated.getFunction().refersTo(ClassObject::property())
     and
     decorated.getArg(1).refersTo(setter)
 }
@@ -137,7 +137,7 @@ private predicate property_deleter(CallNode decorated, FunctionObject deleter) {
         deleter_call.getFunction() = prop_deleter
     )
     or
-    decorated.getFunction().refersTo(thePropertyType())
+    decorated.getFunction().refersTo(ClassObject::property())
     and
     decorated.getArg(2).refersTo(deleter)
 }

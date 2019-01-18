@@ -43,7 +43,7 @@ predicate iter_not_exhausted(EssaVariable iterator) {
 predicate stop_iteration_handled(CallNode call) {
     exists(Try t |
         t.containsInScope(call.getNode()) and
-        t.getAHandler().getType().refersTo(theStopIterationType())
+        t.getAHandler().getType().refersTo(ClassObject::stopIteration())
     )
 }
 

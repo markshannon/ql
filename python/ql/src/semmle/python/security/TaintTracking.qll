@@ -275,7 +275,7 @@ class DictKind extends CollectionKind {
         result = this and copy_call(fromnode, tonode)
         or
         result = this and
-        tonode.(CallNode).getFunction().refersTo(theDictType()) and
+        tonode.(CallNode).getFunction().refersTo(ClassObject::dict()) and
         tonode.(CallNode).getArg(0) = fromnode
     }
 
@@ -1426,7 +1426,7 @@ pragma [noinline]
 private predicate dict_construct(ControlFlowNode itemnode, ControlFlowNode dictnode) {
     dictnode.(DictNode).getAValue() = itemnode
     or
-    dictnode.(CallNode).getFunction().refersTo(theDictType()) and
+    dictnode.(CallNode).getFunction().refersTo(ClassObject::dict()) and
     dictnode.(CallNode).getArgByName(_) = itemnode
 }
 
@@ -1449,10 +1449,10 @@ private predicate sequence_call(ControlFlowNode fromnode, CallNode tonode) {
     tonode.getArg(0) = fromnode and
     exists(ControlFlowNode cls |
         cls = tonode.getFunction() |
-        cls.refersTo(theListType())
+        cls.refersTo(ClassObject::list())
         or
-        cls.refersTo(theTupleType())
+        cls.refersTo(ClassObject::tuple())
         or
-        cls.refersTo(theSetType())
+        cls.refersTo(ClassObject::set())
     )
 }

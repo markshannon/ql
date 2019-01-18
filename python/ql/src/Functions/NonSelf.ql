@@ -21,7 +21,7 @@ predicate first_arg_self(Function f) {
 }
 
 predicate is_type_method(FunctionObject f) {
-    exists(ClassObject c | c.lookupAttribute(_) = f and c.getASuperType() = theTypeType())
+    exists(ClassObject c | c.lookupAttribute(_) = f and c.getASuperType() = ClassObject::type())
 }
 
 predicate used_in_defining_scope(FunctionObject f) {

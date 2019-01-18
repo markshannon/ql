@@ -154,13 +154,13 @@ class OsGuard extends ConditionBlock {
 
     OsGuard() {
         exists(OsTest t |
-            PointsTo::points_to(this.getLastNode(), _, theBoolType(), t, _)
+            PointsTo::points_to(this.getLastNode(), _, ClassObject::bool(), t, _)
         )
     }
 
     string getOs() {
         exists(OsTest t |
-            PointsTo::points_to(this.getLastNode(), _, theBoolType(), t, _) and result = t.getOs()
+            PointsTo::points_to(this.getLastNode(), _, ClassObject::bool(), t, _) and result = t.getOs()
         )
     }
 

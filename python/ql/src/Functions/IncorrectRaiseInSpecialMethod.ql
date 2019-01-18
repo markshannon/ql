@@ -92,7 +92,7 @@ predicate always_raises(FunctionObject f, ClassObject ex) {
     strictcount(f.getARaisedType()) = 1 and
     not exists(f.getFunction().getANormalExit()) and
     /* raising StopIteration is equivalent to a return in a generator */
-    not ex = theStopIterationType()
+    not ex = ClassObject::stopIteration()
 }
 
 from FunctionObject f, ClassObject cls, string message

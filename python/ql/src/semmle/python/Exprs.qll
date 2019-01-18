@@ -308,7 +308,7 @@ class Bytes extends StrConst {
     }
 
     override Object getLiteralObject() {
-        py_cobjecttypes(result, theBytesType()) and
+        py_cobjecttypes(result, ClassObject::bytes()) and
         py_cobjectnames(result, this.quotedString())
     }
 
@@ -378,9 +378,9 @@ class IntegerLiteral extends Num {
     }
 
     override Object getLiteralObject() {
-        py_cobjecttypes(result, theIntType()) and py_cobjectnames(result, this.getN())
+        py_cobjecttypes(result, ClassObject::intType()) and py_cobjectnames(result, this.getN())
         or
-        py_cobjecttypes(result, theLongType()) and py_cobjectnames(result, this.getN())   
+        py_cobjecttypes(result, ClassObject::longType()) and py_cobjectnames(result, this.getN())   
     }
 
     override boolean booleanValue() {
@@ -408,7 +408,7 @@ class FloatLiteral extends Num {
     }
 
     override Object getLiteralObject() {
-        py_cobjecttypes(result, theFloatType()) and py_cobjectnames(result, this.getN())   
+        py_cobjecttypes(result, ClassObject::floatType()) and py_cobjectnames(result, this.getN())   
     }
 
     override boolean booleanValue() {
@@ -440,7 +440,7 @@ class ImaginaryLiteral extends Num {
     }
 
     override Object getLiteralObject() {
-        py_cobjecttypes(result, theComplexType()) and py_cobjectnames(result, this.getN())   
+        py_cobjecttypes(result, ClassObject::complex()) and py_cobjectnames(result, this.getN())   
     }
 
     override boolean booleanValue() {
@@ -463,7 +463,7 @@ class Unicode extends StrConst {
     }
 
     override Object getLiteralObject() {
-        py_cobjecttypes(result, theUnicodeType()) and
+        py_cobjecttypes(result, ClassObject::unicode()) and
         py_cobjectnames(result, this.quotedString())
     }
 
@@ -502,7 +502,7 @@ class Dict extends Dict_ {
         result = this.getAValue() or result = this.getAKey()
     }
 
-    AstNode getAChildNode() {
+    override AstNode getAChildNode() {
         result = this.getAnItem()
     }
 

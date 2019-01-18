@@ -25,6 +25,6 @@ not cls.failedInference() and
 not cls.hasAttribute("__contains__") and
 not cls.hasAttribute("__iter__") and
 not cls.hasAttribute("__getitem__") and
-not cls = theNoneType()
+not cls = ClassObject::noneType()
 
 select cmp, "This test may raise an Exception as the $@ may be of non-container class $@.", origin, "target", cls, cls.getName()

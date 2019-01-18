@@ -28,7 +28,7 @@ abstract class StringKind extends TaintKind {
     }
 
     override ClassObject getClass() {
-        result = theStrType() or result = theUnicodeType()
+        result = theStrType() or result = ClassObject::unicode()
     }
 
 }
@@ -94,7 +94,7 @@ private predicate to_str(ControlFlowNode fromnode, CallNode tonode) {
     tonode.getAnArg() = fromnode and
     exists(ClassObject str |
         tonode.getFunction().refersTo(str) |
-        str = theUnicodeType() or str = theBytesType()
+        str = ClassObject::unicode() or str = ClassObject::bytes()
     )
 }
 

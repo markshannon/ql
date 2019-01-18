@@ -63,7 +63,7 @@ predicate points_to_call_to_range(ControlFlowNode f) {
     /* If range is wrapped in a list it is still a range */
     exists(CallNode call |
         f.refersTo(call) and
-        call = theListType().getACall() and
+        call = ClassObject::list().getACall() and
         points_to_call_to_range(call.getArg(0))
     )
 }

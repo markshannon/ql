@@ -86,7 +86,7 @@ module PointsTo {
 
         /** INTERNAL -- Use `ClassMethod` instead */
         cached predicate class_method(Object cls_method, FunctionObject method) {
-            decorator_call(cls_method, theClassMethodType(), method)
+            decorator_call(cls_method, ClassObject::classmethod(), method)
         }
 
         pragma [nomagic]
@@ -127,7 +127,7 @@ module PointsTo {
                     imp.isImport()
                 )
             ) and explicitly_imported(value) and
-            value = package.submodule(name) and cls = theModuleType() and origin = value
+            value = package.submodule(name) and cls = ClassObject::moduleType() and origin = value
         }
 
         /** INTERNAL -- `Use m.attributeRefersTo(name, obj, origin)` instead.
@@ -257,7 +257,7 @@ module PointsTo {
         /** Holds if `f` is the instantiation of an object, `cls(...)`.  */
         cached predicate instantiation(CallNode f, PointsToContext context, ClassObject cls) {
             points_to(f.getFunction(), context, cls, _, _) and
-            not cls = theTypeType() and
+            not cls = ClassObject::type() and
             Types::callToClassWillReturnInstance(cls)
         }
 
@@ -448,9 +448,9 @@ module PointsTo {
             value = theTrueObject() and b = true
             or
             value = theFalseObject() and b = false
-        ) and cls = theBoolType() and origin = f
+        ) and cls = ClassObject::bool() and origin = f
         or
-        import_points_to(f, value, origin) and cls = theModuleType() and context.appliesToScope(f.getScope())
+        import_points_to(f, value, origin) and cls = ClassObject::moduleType() and context.appliesToScope(f.getScope())
         or
         attribute_load_points_to(f, context, value, cls, origin)
         or
@@ -484,7 +484,7 @@ module PointsTo {
         or
         value.(SuperCall).instantiation(context, f) and f = origin and cls = theSuperType()
         or
-        value.(SuperBoundMethod).instantiation(context, f) and f = origin and cls = theBoundMethodType()
+        value.(SuperBoundMethod).instantiation(context, f) and f = origin and cls = ClassObject::boundMethod()
         or
         exists(boolean b |
             b = Filters::evaluates_boolean(f, _, context, _, _, _)
@@ -492,7 +492,7 @@ module PointsTo {
             value = theTrueObject() and b = true
             or
             value = theFalseObject() and b = false
-        ) and cls = theBoolType() and origin = f
+        ) and cls = ClassObject::bool() and origin = f
         or
         f.(CustomPointsToFact).pointsTo(context, value, cls, origin)
     }
@@ -578,10 +578,10 @@ module PointsTo {
     pragma [noinline]
     private predicate class_or_module_attribute(Object obj, string name, Object value, ClassObject cls, ObjectOrCfg orig) {
         /* Normal class attributes */
-        Types::class_attribute_lookup(obj, name, value, cls, orig) and not cls = theStaticMethodType() and not cls = theClassMethodType()
+        Types::class_attribute_lookup(obj, name, value, cls, orig) and not cls = ClassObject::staticmethod() and not cls = ClassObject::classmethod()
         or
         /* Static methods of the class */
-        exists(CallNode sm | Types::class_attribute_lookup(obj, name, sm, theStaticMethodType(), _) and sm.getArg(0) = value and cls = thePyFunctionType() and orig = value)
+        exists(CallNode sm | Types::class_attribute_lookup(obj, name, sm, ClassObject::staticmethod(), _) and sm.getArg(0) = value and cls = ClassObject::pythonFunction() and orig = value)
         or
         /* Module attributes */
         Layer::module_attribute_points_to(obj, name, value, cls, orig)
@@ -597,7 +597,7 @@ module PointsTo {
             /* Static methods on the class of the instance */
             exists(CallNode sm, ClassObject icls |
                 points_to(f.getObject(name), context, _, icls, _) and
-                Types::class_attribute_lookup(icls, name, sm, theStaticMethodType(), _) and sm.getArg(0) = value and cls = thePyFunctionType() and origin = value
+                Types::class_attribute_lookup(icls, name, sm, ClassObject::staticmethod(), _) and sm.getArg(0) = value and cls = ClassObject::pythonFunction() and origin = value
             )
             or
             /* Unknown instance attributes */
@@ -699,7 +699,7 @@ module PointsTo {
      * Tracking too many binary expressions is likely to kill performance.
      */
     private predicate binary_expr_points_to(BinaryExprNode b, PointsToContext context, Object value, ClassObject cls, ControlFlowNode origin) {
-        cls = theIntType() and
+        cls = ClassObject::intType() and
         exists(ControlFlowNode left, ControlFlowNode right |
             bitwise_expression_node(b, left, right) and
             points_to(left, context, _, cls, _) and
@@ -808,7 +808,7 @@ module PointsTo {
     private predicate compare_expr_points_to(CompareNode cmp, PointsToContext context, Object value, ClassObject cls, ControlFlowNode origin) {
         equality_expr_points_to(cmp, context, value, cls, origin)
         or
-        cls = theBoolType() and origin = cmp and
+        cls = ClassObject::bool() and origin = cmp and
         (
             incomparable_values(cmp, context) and
             (value = theFalseObject() or value = theTrueObject())
@@ -857,7 +857,7 @@ module PointsTo {
 
     private predicate not_points_to(UnaryExprNode f, PointsToContext context, Object value, ClassObject cls, ControlFlowNode origin) {
         f.getNode().getOp() instanceof Not and
-        cls = theBoolType() and origin = f and
+        cls = ClassObject::bool() and origin = f and
         exists(Object operand |
             points_to(f.getOperand(), context, operand, _, _)
             |
@@ -868,7 +868,7 @@ module PointsTo {
     }
 
     private predicate equality_expr_points_to(CompareNode cmp, PointsToContext context, Object value, ClassObject cls, ControlFlowNode origin) {
-        cls = theBoolType() and origin = cmp and
+        cls = ClassObject::bool() and origin = cmp and
         exists(ControlFlowNode x, ControlFlowNode y, Object xobj, Object yobj, boolean is |
             BaseFilters::equality_test(cmp, x, is, y) and
             points_to(x, context, xobj, _, _) and
@@ -911,7 +911,7 @@ module PointsTo {
             points_to(s.getIndex(), context, zero, _, _)
         ) and
         value.intValue() = major_version() and
-        cls = theIntType()
+        cls = ClassObject::intType()
     }
 
     /** Holds if `s` points to `sys.version_info[:x]` or `sys.version_info[:]`. */
@@ -985,7 +985,7 @@ module PointsTo {
 
          /** Holds if `f` is a call to type() with a single argument `arg` */
          private predicate call_to_type(CallNode f, ControlFlowNode arg, PointsToContext context) {
-             points_to(f.getFunction(), context, theTypeType(), _, _) and not exists(f.getArg(1)) and arg = f.getArg(0)
+             points_to(f.getFunction(), context, ClassObject::type(), _, _) and not exists(f.getArg(1)) and arg = f.getArg(0)
          }
 
          pragma [noinline]
@@ -995,7 +995,7 @@ module PointsTo {
                  points_to(arg, context, _, value, _)
              ) and
              origin.getNode() = value.getOrigin() and
-             cls = theTypeType()
+             cls = ClassObject::type()
          }
 
          pragma [noinline]
@@ -1005,7 +1005,7 @@ module PointsTo {
                  points_to(arg, context, _, value, _)
              ) and
              not exists(value.getOrigin()) and
-             origin = f and cls = theTypeType()
+             origin = f and cls = ClassObject::type()
          }
 
          pragma [noinline]
@@ -1018,7 +1018,7 @@ module PointsTo {
                  cls = b.getAReturnType()
              ) and
              f = origin and
-             if cls = theNoneType() then
+             if cls = ClassObject::noneType() then
                  value = theNoneObject()
              else
                  value = f
@@ -1075,7 +1075,7 @@ module PointsTo {
          predicate call_to_generator_points_to(CallNode f, PointsToContext context, Object value, ClassObject cls, ControlFlowNode origin) {
              exists(PyFunctionObject func |
                  f = get_a_call(func, context) |
-                 func.getFunction().isGenerator() and origin = f and value = f and cls = theGeneratorType()
+                 func.getFunction().isGenerator() and origin = f and value = f and cls = ClassObject::generator()
              )
          }
 
@@ -1211,7 +1211,7 @@ module PointsTo {
 
          /** Holds if `func` implicitly returns the `None` object */
          predicate implicitly_returns(PyFunctionObject func, Object none_, ClassObject noneType) {
-            noneType = theNoneType() and not func.getFunction().isGenerator() and none_ = theNoneObject() and
+            noneType = ClassObject::noneType() and not func.getFunction().isGenerator() and none_ = theNoneObject() and
             (
               not exists(func.getAReturnedNode()) and exists(func.getFunction().getANormalExit())
               or
@@ -1579,8 +1579,8 @@ module PointsTo {
                 deco = f.getADecorator().getAFlowNode() |
                 exists(Object o |
                     points_to(deco, _, o, _, _) |
-                    not o = theStaticMethodType() and
-                    not o = theClassMethodType()
+                    not o = ClassObject::staticmethod() and
+                    not o = ClassObject::classmethod()
                 )
                 or not deco instanceof NameNode
             )
@@ -1625,7 +1625,7 @@ module PointsTo {
             exists(PackageObject package |
                 package.getInitModule().getModule() = def.getDefiningNode().getScope() |
                 value = package.submodule(def.getSourceVariable().getName()) and
-                cls = theModuleType() and
+                cls = ClassObject::moduleType() and
                 origin = value and
                 context.isImport()
             )
@@ -2383,9 +2383,9 @@ module PointsTo {
             or
             cls.isBuiltin() and result = true
             or
-            get_an_improper_super_type(class_get_meta_class(cls)) = theTypeType() and result = true
+            get_an_improper_super_type(class_get_meta_class(cls)) = ClassObject::type() and result = true
             or
-            class_get_meta_class(cls) = theClassType() and result = false
+            class_get_meta_class(cls) = ClassObject::classType() and result = false
         }
 
         /** INTERNAL -- Use `ClassObject.isNewStyle()` instead. */
@@ -2423,17 +2423,17 @@ module PointsTo {
         }
 
         private predicate abcSubclass(ClassObject cls, ClassObject sup) {
-            cls = theListType() and sup = collectionsAbcClass("Iterable")
+            cls = ClassObject::list() and sup = collectionsAbcClass("Iterable")
             or
-            cls = theSetType() and sup = collectionsAbcClass("Iterable")
+            cls = ClassObject::set() and sup = collectionsAbcClass("Iterable")
             or
-            cls = theDictType() and sup = collectionsAbcClass("Iterable")
+            cls = ClassObject::dict() and sup = collectionsAbcClass("Iterable")
             or
-            cls = theSetType() and sup = collectionsAbcClass("Set")
+            cls = ClassObject::set() and sup = collectionsAbcClass("Set")
             or
-            cls = theListType() and sup = collectionsAbcClass("Sequence")
+            cls = ClassObject::list() and sup = collectionsAbcClass("Sequence")
             or
-            cls = theDictType() and sup = collectionsAbcClass("Mapping")
+            cls = ClassObject::dict() and sup = collectionsAbcClass("Mapping")
         }
 
         cached boolean is_improper_subclass_bool(ClassObject cls, ClassObject sup) {
@@ -2650,9 +2650,9 @@ module PointsTo {
                 c = cls.getPyClass() and
                 n = count(c.getABase())
                 |
-                major_version() = 3 and result = theTypeType()
+                major_version() = 3 and result = ClassObject::type()
                 or
-                major_version() = 2 and result = theClassType()
+                major_version() = 2 and result = ClassObject::classType()
             )
             or
             exists(ClassObject meta1, ClassObject meta2 |
@@ -2665,10 +2665,10 @@ module PointsTo {
                 get_an_improper_super_type(meta2) = meta1 and result = meta2
                 or
                 /* Choose new-style meta-class over old-style */
-                meta2 = theClassType() and result = meta1
+                meta2 = ClassObject::classType() and result = meta1
                 or
                 /* Make sure we have a metaclass, even if base is unknown */
-                meta1 = theUnknownType() and result = theTypeType()
+                meta1 = theUnknownType() and result = ClassObject::type()
                 or
                 meta2 = theUnknownType() and result = meta1
             )
@@ -2753,7 +2753,7 @@ module PointsTo {
 
         /** Holds if instances of class `cls` are always truthy. */
         cached predicate instances_always_true(ClassObject cls, int n) {
-            not cls = theNoneType() and
+            not cls = ClassObject::noneType() and
             n = class_base_count(cls)
             or
             instances_always_true(cls, n+1) and

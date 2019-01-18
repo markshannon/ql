@@ -42,7 +42,7 @@ predicate returns_meaningful_value(FunctionObject f) {
       or
       /* Is f a builtin function that returns something other than None?
        * Ignore __import__ as it is often called purely for side effects */
-      f.isC() and f.getAnInferredReturnType() != theNoneType() and not f.getName() = "__import__"
+      f.isC() and f.getAnInferredReturnType() != ClassObject::noneType() and not f.getName() = "__import__"
     )
 }
 

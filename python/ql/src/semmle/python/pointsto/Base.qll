@@ -25,13 +25,13 @@ module BasePointsTo {
 /** The kwargs parameter (**kwargs) in a function definition is always a dict */
 predicate kwargs_points_to(ControlFlowNode f, ClassObject cls) {
     exists(Function func | func.getKwarg() = f.getNode()) and
-    cls = theDictType()
+    cls = ClassObject::dict()
 }
 
 /** The varargs (*varargs) in a function definition is always a tuple */
 predicate varargs_points_to(ControlFlowNode f, ClassObject cls) {
     exists(Function func | func.getVararg() = f.getNode()) and
-    cls = theTupleType()
+    cls = ClassObject::tuple()
 }
 
 /** Gets the class of the object for simple cases, namely constants, functions, 
@@ -45,31 +45,31 @@ ClassObject simple_types(Object obj) {
     or
     result = collection_literal(obj.getOrigin())
     or
-    obj.getOrigin() instanceof CallableExpr and result = thePyFunctionType()
+    obj.getOrigin() instanceof CallableExpr and result = ClassObject::pythonFunction()
     or
-    obj.getOrigin() instanceof Module and result = theModuleType()
+    obj.getOrigin() instanceof Module and result = ClassObject::moduleType()
     or
     result = builtin_object_type(obj)
 }
 
 private ClassObject comprehension(Expr e) {
-    e instanceof ListComp and result = theListType()
+    e instanceof ListComp and result = ClassObject::list()
     or
-    e instanceof SetComp and result = theSetType()
+    e instanceof SetComp and result = ClassObject::set()
     or
-    e instanceof DictComp and result = theDictType()
+    e instanceof DictComp and result = ClassObject::dict()
     or
-    e instanceof GeneratorExp and result = theGeneratorType()
+    e instanceof GeneratorExp and result = ClassObject::generator()
 }
 
 private ClassObject collection_literal(Expr e) {
-    e instanceof List and result = theListType()
+    e instanceof List and result = ClassObject::list()
     or
-    e instanceof Set and result = theSetType()
+    e instanceof Set and result = ClassObject::set()
     or
-    e instanceof Dict and result = theDictType()
+    e instanceof Dict and result = ClassObject::dict()
     or
-    e instanceof Tuple and result = theTupleType()
+    e instanceof Tuple and result = ClassObject::tuple()
 }
 
 private int tuple_index_value(Object t, int i) {
@@ -564,7 +564,7 @@ Object unknownValue() {
 }
 
 BuiltinCallable theTypeNewMethod() {
-    py_cmembers_versioned(theTypeType(), "__new__", result, major_version().toString())
+    py_cmembers_versioned(ClassObject::type(), "__new__", result, major_version().toString())
 }
 
 /** Gets the `value, cls, origin` that `f` would refer to if it has not been assigned some other value */

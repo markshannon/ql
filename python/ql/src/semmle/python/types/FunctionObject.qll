@@ -213,7 +213,7 @@ class PyFunctionObject extends FunctionObject {
 
     /** Factored out to help join ordering */
     private predicate implicitlyReturns(Object none_, ClassObject noneType) {
-        noneType = theNoneType() and not this.getFunction().isGenerator() and none_ = theNoneObject() and
+        noneType = ClassObject::noneType() and not this.getFunction().isGenerator() and none_ = theNoneObject() and
         (
             not exists(this.getAReturnedNode()) and exists(this.getFunction().getANormalExit())
             or
@@ -223,7 +223,7 @@ class PyFunctionObject extends FunctionObject {
 
     /** Gets a class that this function may return */
     override ClassObject getAnInferredReturnType() {
-        this.getFunction().isGenerator() and result = theGeneratorType()
+        this.getFunction().isGenerator() and result = ClassObject::generator()
         or
         not this.neverReturns() and not this.getFunction().isGenerator() and
         (
@@ -246,7 +246,7 @@ abstract class BuiltinCallable extends FunctionObject {
     override predicate isProcedure() {
         forex(ClassObject rt |
             rt = this.getAReturnType() |
-            rt = theNoneType()
+            rt = ClassObject::noneType()
         )
     }
 
@@ -257,9 +257,9 @@ abstract class BuiltinCallable extends FunctionObject {
 class BuiltinMethodObject extends BuiltinCallable {
 
     BuiltinMethodObject() {
-        py_cobjecttypes(this, theMethodDescriptorType())
+        py_cobjecttypes(this, ClassObject::methodDescriptor())
         or
-        py_cobjecttypes(this, theBuiltinFunctionType()) and exists(ClassObject c | py_cmembers_versioned(c, _, this, major_version().toString()))
+        py_cobjecttypes(this, ClassObject::builtinFunction()) and exists(ClassObject c | py_cmembers_versioned(c, _, this, major_version().toString()))
         or
         exists(ClassObject wrapper_descriptor | 
             py_cobjecttypes(this, wrapper_descriptor) and
@@ -316,7 +316,7 @@ class BuiltinMethodObject extends BuiltinCallable {
 class BuiltinFunctionObject extends BuiltinCallable {
 
     BuiltinFunctionObject() {
-        py_cobjecttypes(this, theBuiltinFunctionType()) and exists(ModuleObject m | py_cmembers_versioned(m, _, this, major_version().toString()))
+        py_cobjecttypes(this, ClassObject::builtinFunction()) and exists(ModuleObject m | py_cmembers_versioned(m, _, this, major_version().toString()))
     }
 
     override string getName() {
@@ -356,9 +356,9 @@ class BuiltinFunctionObject extends BuiltinCallable {
         or
         /* Fix a few minor inaccuracies in the CPython analysis */ 
         ext_rettype(this, result) and not (
-            this = Object::builtin("__import__") and result = theNoneType()
+            this = Object::builtin("__import__") and result = ClassObject::noneType()
             or
-            this = Object::builtin("compile") and result = theNoneType()
+            this = Object::builtin("compile") and result = ClassObject::noneType()
             or
             this = Object::builtin("sum")
             or

@@ -19,7 +19,7 @@ predicate string_concat_in_loop(BinaryExpr b) {
            add.getNode() = b and d = u.getAnUltimateDefinition() |
            d.getDefinition().(DefinitionNode).getValue() = add and u.getAUse() = add.getAnOperand() and
            add.getAnOperand().refersTo(_, str_type, _) and
-           (str_type = theBytesType() or str_type = theUnicodeType())
+           (str_type = ClassObject::bytes() or str_type = ClassObject::unicode())
     )
 }
 

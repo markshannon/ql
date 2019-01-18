@@ -48,11 +48,11 @@ class ClassMethodObject extends Object {
 class StaticMethodObject extends Object {
 
     StaticMethodObject() {
-        decorator_call(this, theStaticMethodType(), _)
+        decorator_call(this, ClassObject::staticmethod(), _)
     }
 
     FunctionObject getFunction() {
-        decorator_call(this, theStaticMethodType(), result)
+        decorator_call(this, ClassObject::staticmethod(), result)
     }
 
 }

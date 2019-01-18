@@ -18,7 +18,7 @@ from Call c, ClassObject t, Expr f, AstNode origin
 where f = c.getFunc() and f.refersTo(_, t, origin) and
       not t.isCallable() and not t.unknowableAttributes()
       and not t.isDescriptorType()
-      and not t = theNoneType()
+      and not t = ClassObject::noneType()
       and not use_of_not_implemented_in_raise(_, f)
 
 select c, "Call to a $@ of $@.", origin, "non-callable", t, t.toString()

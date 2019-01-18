@@ -40,9 +40,9 @@ predicate side_effecting_descriptor_type(ClassObject descriptor) {
     /* Technically all descriptor gets have side effects, 
      * but some are indicative of a missing call and 
      * we want to treat them as having no effect. */
-   not descriptor = thePyFunctionType() and
-   not descriptor = theStaticMethodType() and
-   not descriptor = theClassMethodType()
+   not descriptor = ClassObject::pythonFunction() and
+   not descriptor = ClassObject::staticmethod() and
+   not descriptor = ClassObject::classmethod()
 }
 
 /** Side effecting binary operators are rare, so we assume they are not
