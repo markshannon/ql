@@ -70,7 +70,7 @@ predicate scope_sanity(string clsname, string problem, string what) {
     )
 }
 
-string best_description_builtin_object(Object o) {
+string best_description_Object::builtin(Object o) {
     o.isBuiltin() and
     (
         result = o.toString()
@@ -83,15 +83,15 @@ string best_description_builtin_object(Object o) {
     )
 }
 
-private predicate introspected_builtin_object(Object o) {
+private predicate introspected_Object::builtin(Object o) {
     /* Only check objects from the extractor, missing data for objects generated from C source code analysis is OK.
      * as it will be ignored if it doesn't match up with the introspected form. */
     py_cobject_sources(o, 0)
 }
 
-predicate builtin_object_sanity(string clsname, string problem, string what) {
+predicate Object::builtin_sanity(string clsname, string problem, string what) {
     exists(Object o |
-        clsname = o.getAQlClass() and what = best_description_builtin_object(o) and introspected_builtin_object(o) |
+        clsname = o.getAQlClass() and what = best_description_Object::builtin(o) and introspected_Object::builtin(o) |
         not exists(o.getAnInferredType()) and not py_cobjectnames(o, _) and problem = "neither name nor type"
         or
         uniqueness_error(count(string name | py_cobjectnames(o, name)), "name", problem)
@@ -219,7 +219,7 @@ location_sanity(clsname, problem, what)or
 scope_sanity(clsname, problem, what) or
 cfg_sanity(clsname, problem, what) or
 ssa_sanity(clsname, problem, what) or
-builtin_object_sanity(clsname, problem, what) or
+Object::builtin_sanity(clsname, problem, what) or
 source_object_sanity(clsname, problem, what) or
 function_object_sanity(clsname, problem, what) or
 points_to_sanity(clsname, problem, what) or
