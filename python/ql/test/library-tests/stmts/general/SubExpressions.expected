@@ -1,3 +1,6 @@
+| AnnAssign | x | x | 6 |
+| AnnAssign | y | y | 6 |
+| AnnAssign | z | z | 6 |
 | Delete | Attribute | Attribute | 4 |
 | Delete | Attribute | a | 4 |
 | Delete | Subscript | Subscript | 2 |

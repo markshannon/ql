@@ -1,5 +1,6 @@
 
 import python
 
-from Stmt s
-select s.toString(), s.getASubExpression().toString(), s.getASubExpression().getASubExpression*().toString(), s.getLocation().getStartLine()
+from Stmt s, Expr e
+where e = s.getASubExpression()
+select s.toString(), e.toString(), e.getASubExpression*().toString(), s.getLocation().getStartLine()

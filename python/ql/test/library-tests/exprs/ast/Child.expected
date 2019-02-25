@@ -7,6 +7,10 @@
 | 0 | Module exprs_test | 8 | exprs_test.py:8:1:8:12 | ExprStmt |
 | 0 | Module exprs_test | 9 | exprs_test.py:9:1:9:11 | ExprStmt |
 | 0 | Module exprs_test | 11 | exprs_test.py:11:1:11:11 | ExprStmt |
+| 0 | Module exprs_test | 15 | exprs_test.py:15:1:15:4 | AnnAssign |
+| 0 | Module exprs_test | 16 | exprs_test.py:16:1:16:4 | AnnAssign |
+| 0 | Module exprs_test | 17 | exprs_test.py:17:1:17:16 | AnnAssign |
+| 0 | Module exprs_test | 18 | exprs_test.py:18:1:18:16 | AnnAssign |
 | 2 | ExprStmt | 2 | exprs_test.py:2:1:2:1 | IntegerLiteral |
 | 3 | ExprStmt | 3 | exprs_test.py:3:2:3:4 | Tuple |
 | 3 | Tuple | 3 | exprs_test.py:3:2:3:2 | IntegerLiteral |
@@ -32,3 +36,26 @@
 | 11 | ExprStmt | 11 | exprs_test.py:11:1:11:11 | func() |
 | 11 | func() | 11 | exprs_test.py:11:1:11:4 | func |
 | 11 | func() | 11 | exprs_test.py:11:6:11:10 | DictUnpacking |
+| 15 | AnnAssign | 15 | exprs_test.py:15:1:15:1 | x |
+| 15 | AnnAssign | 15 | exprs_test.py:15:4:15:4 | IntegerLiteral |
+| 16 | AnnAssign | 16 | exprs_test.py:16:1:16:1 | x |
+| 16 | AnnAssign | 16 | exprs_test.py:16:4:16:4 | y |
+| 17 | AnnAssign | 17 | exprs_test.py:17:1:17:1 | x |
+| 17 | AnnAssign | 17 | exprs_test.py:17:4:17:16 | Dict |
+| 17 | BinaryExpr | 17 | exprs_test.py:17:13:17:13 | z |
+| 17 | BinaryExpr | 17 | exprs_test.py:17:15:17:15 | q |
+| 17 | Dict | 17 | exprs_test.py:17:5:17:15 | KeyValuePair |
+| 17 | KeyValuePair | 17 | exprs_test.py:17:5:17:11 | Subscript |
+| 17 | KeyValuePair | 17 | exprs_test.py:17:13:17:15 | BinaryExpr |
+| 17 | Subscript | 17 | exprs_test.py:17:5:17:5 | y |
+| 17 | Subscript | 17 | exprs_test.py:17:5:17:8 | Subscript |
+| 17 | Subscript | 17 | exprs_test.py:17:7:17:7 | a |
+| 17 | Subscript | 17 | exprs_test.py:17:10:17:10 | b |
+| 18 | AnnAssign | 18 | exprs_test.py:18:1:18:1 | x |
+| 18 | AnnAssign | 18 | exprs_test.py:18:4:18:16 | f() |
+| 18 | Keyword | 18 | exprs_test.py:18:11:18:11 | IntegerLiteral |
+| 18 | Starred | 18 | exprs_test.py:18:15:18:15 | t |
+| 18 | f() | 18 | exprs_test.py:18:4:18:4 | f |
+| 18 | f() | 18 | exprs_test.py:18:6:18:6 | IntegerLiteral |
+| 18 | f() | 18 | exprs_test.py:18:9:18:11 | Keyword |
+| 18 | f() | 18 | exprs_test.py:18:14:18:15 | Starred |

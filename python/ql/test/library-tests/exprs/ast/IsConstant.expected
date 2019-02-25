@@ -15,3 +15,6 @@
 | exprs_test.py:9:2:9:2 | IntegerLiteral |
 | exprs_test.py:9:5:9:6 | IntegerLiteral |
 | exprs_test.py:9:9:9:10 | IntegerLiteral |
+| exprs_test.py:15:4:15:4 | IntegerLiteral |
+| exprs_test.py:18:6:18:6 | IntegerLiteral |
+| exprs_test.py:18:11:18:11 | IntegerLiteral |
