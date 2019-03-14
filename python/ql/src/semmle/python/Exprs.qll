@@ -79,7 +79,7 @@ class Expr extends Expr_, AstNode {
      * `ControlFlowNode.refersTo(...)` instead.
      */
     predicate refersTo(Object value, ClassObject cls, AstNode origin) {
-        not py_special_objects(cls, "_semmle_unknown_type")
+        not cls = theUnknownType()
         and
         not value = unknownValue()
         and
@@ -89,7 +89,7 @@ class Expr extends Expr_, AstNode {
     /** Gets what this expression might "refer-to" in the given `context`.
      */
     predicate refersTo(Context context, Object value, ClassObject cls, AstNode origin) {
-        not py_special_objects(cls, "_semmle_unknown_type")
+        not cls = theUnknownType()
         and
         PointsTo::points_to(this.getAFlowNode(), context, value, cls, origin.getAFlowNode())
     }
@@ -308,8 +308,8 @@ class Bytes extends StrConst {
     }
 
     override Object getLiteralObject() {
-        py_cobjecttypes(result, theBytesType()) and
-        py_cobjectnames(result, this.quotedString())
+        result.asBuiltin().getClass() = theBytesType().asBuiltin() and
+        result.asBuiltin().getName() = this.quotedString()
     }
 
     /** The extractor puts quotes into the name of each string (to prevent "0" clashing with 0).
@@ -378,9 +378,12 @@ class IntegerLiteral extends Num {
     }
 
     override Object getLiteralObject() {
-        py_cobjecttypes(result, theIntType()) and py_cobjectnames(result, this.getN())
-        or
-        py_cobjecttypes(result, theLongType()) and py_cobjectnames(result, this.getN())   
+        result.asBuiltin().getName() = this.getN() and
+        (
+            result.asBuiltin().getClass() = theIntType().asBuiltin()
+            or
+            result.asBuiltin().getClass() = theLongType().asBuiltin()
+        )
     }
 
     override boolean booleanValue() {
@@ -408,7 +411,8 @@ class FloatLiteral extends Num {
     }
 
     override Object getLiteralObject() {
-        py_cobjecttypes(result, theFloatType()) and py_cobjectnames(result, this.getN())   
+        result.asBuiltin().getClass() = theFloatType().asBuiltin() and
+        result.asBuiltin().getName() = this.getN()
     }
 
     override boolean booleanValue() {
@@ -440,7 +444,8 @@ class ImaginaryLiteral extends Num {
     }
 
     override Object getLiteralObject() {
-        py_cobjecttypes(result, theComplexType()) and py_cobjectnames(result, this.getN())   
+        result.asBuiltin().getClass() = theComplexType().asBuiltin() and
+        result.asBuiltin().getName() = this.getN()
     }
 
     override boolean booleanValue() {
@@ -463,8 +468,8 @@ class Unicode extends StrConst {
     }
 
     override Object getLiteralObject() {
-        py_cobjecttypes(result, theUnicodeType()) and
-        py_cobjectnames(result, this.quotedString())
+        result.asBuiltin().getClass() = theUnicodeType().asBuiltin() and
+        result.asBuiltin().getName() = this.quotedString()
     }
 
     /** The extractor puts quotes into the name of each string (to prevent "0" clashing with 0).

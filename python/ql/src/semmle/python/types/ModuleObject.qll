@@ -2,28 +2,23 @@ import python
 private import semmle.python.pointsto.PointsTo
 private import semmle.python.pointsto.Base
 private import semmle.python.types.ModuleKind
+private import semmle.python.types.Builtins
 
 abstract class ModuleObject extends Object {
 
     ModuleObject () {
-        exists(Module m | m.getEntryNode() = this)
+        exists(Module m | m.getEntryNode() = this.getCfgNode())
         or
-        this.asBuiltin().getClass() = theModuleType().asBuiltin()
+        this.asBuiltin().isModule()
     }
 
     /** Gets the scope corresponding to this module, if this is a Python module */
-    Module getModule() {
-        none()
-    }
+    abstract Module getModule();
 
     /** Gets the source scope corresponding to this module, if this is a Python module */
-    Module getSourceModule() {
-        none()
-    }
+    abstract Module getSourceModule();
 
-    Container getPath() {
-        none()
-    }
+    abstract Container getPath();
 
     /** Gets the name of this scope */
     abstract string getName();
@@ -64,15 +59,13 @@ abstract class ModuleObject extends Object {
     predicate exports(string name) {
         PointsTo::module_exports(this, name)
     }
- 
+
     /** Whether the complete set of names "exported" by this module can be accurately determined */
     abstract predicate exportsComplete();
 
     /** Gets the short name of the module. For example the short name of module x.y.z is 'z' */
     string getShortName() {
-        result = this.getName().suffix(this.getPackage().getName().length()+1)
-        or
-        result = this.getName() and not exists(this.getPackage())
+        result = this.getName().regexpReplaceAll("[^.]+\\.", "")
     }
 
     /** Whether this module is imported by 'import name'. For example on a linux system,
@@ -92,10 +85,6 @@ abstract class ModuleObject extends Object {
      */
     string getKind() {
         result = getKindForModule(this)
-    }
-
-    override boolean booleanValue() {
-        result = true
     }
 
 }
@@ -130,13 +119,24 @@ class BuiltinModuleObject extends ModuleObject {
         any()
     }
 
+    override Module getSourceModule() {
+        none()
+    }
+
+    override Module getModule() {
+        none()
+    }
+
+    override Container getPath() {
+        none()
+    }
 
 }
 
 class PythonModuleObject extends ModuleObject {
 
     PythonModuleObject() {
-        exists(Module m | m.getEntryNode() = this |
+        exists(Module m | m.getEntryNode() = this.getCfgNode() |
             not m.isPackage()
         )
     }
@@ -216,7 +216,7 @@ Object object_for_string(string text) {
 class PackageObject extends ModuleObject {
 
     PackageObject() {
-        exists(Module p | p.getEntryNode() = this |
+        exists(Module p | p.getEntryNode() = this.getCfgNode() |
             p.isPackage()
         )
     }
@@ -255,10 +255,13 @@ class PackageObject extends ModuleObject {
 
     /** Holds if this package has no `__init__.py` file. */
     predicate hasNoInitModule() {
-        not exists(Module m |
-            m.isPackageInit() and
-            m.getFile().getParent() = this.getPath()
-        )
+        exists(Container path |
+            path = this.getPath() |
+            not exists(Module m |
+                m.isPackageInit() and
+                m.getFile().getParent() = path
+           )
+       )
     }
 
     override predicate exportsComplete() {

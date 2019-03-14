@@ -57,6 +57,11 @@ class Module extends Module_, Scope, AstNode {
         /* this.isPackage() and */ result.getName() = this.getName() + ".__init__"
     }
 
+    /** Holds if this module is an __init__ module. */
+    predicate isInitModule() {
+        exists(Module p | p.getInitModule() = this)
+    }
+
     /** Whether this module is a package initializer */
     predicate isPackageInit() {
         this.getName().matches("%\\_\\_init\\_\\_") and not this.isPackage()
@@ -88,6 +93,11 @@ class Module extends Module_, Scope, AstNode {
     Module getPackage() {
         this.getName().matches("%.%") and
         result.getName() = getName().regexpReplaceAll("\\.[^.]*$", "")
+    }
+
+    /** Gets the folder containing this module */
+    Folder getPackageFolder() {
+        result = this.getPath().getParent()
     }
 
     /** Gets the name of the package containing this module */

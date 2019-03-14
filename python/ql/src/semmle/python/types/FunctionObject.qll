@@ -351,15 +351,19 @@ class BuiltinFunctionObject extends BuiltinCallable {
         or
         this = Object::builtin("intern") and result = theStrType()
         or
-        /* Fix a few minor inaccuracies in the CPython analysis */ 
-        ext_rettype(this.asBuiltin(), result.asBuiltin()) and not (
-            this = Object::builtin("__import__") and result = theNoneType()
-            or
-            this = Object::builtin("compile") and result = theNoneType()
-            or
-            this = Object::builtin("sum")
-            or
-            this = Object::builtin("filter")
+        /* Fix a few minor inaccuracies in the CPython analysis */
+        exists(Builtin b, Builtin r |
+            b = this.asBuiltin() and
+            r = result.asBuiltin() and
+            ext_rettype(b, r) and not (
+                b = Builtin::builtin("__import__") and not r = Builtin::special("NoneType")
+                or
+                b = Builtin::builtin("compile") and not r = Builtin::special("NoneType")
+                or
+                b = Builtin::builtin("sum")
+                or
+                b = Builtin::builtin("filter")
+            )
         )
     }
 

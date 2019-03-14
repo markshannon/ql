@@ -1,6 +1,7 @@
 import python
 import semmle.python.GuardedControlFlow
 private import semmle.python.pointsto.PointsTo
+private import semmle.python.types.Builtins
 
 /** A Version of the Python interpreter.
  * Currently only 2.7 or 3.x but may include different sets of versions in the future. */
@@ -20,15 +21,15 @@ class Version extends int {
 }
 
 Object theSysVersionInfoTuple() {
-    py_cmembers_versioned(theSysModuleObject(), "version_info", result, major_version().toString())
+    result.asBuiltin() = Builtin::special("sys").getMember("version_info")
 }
 
 Object theSysHexVersionNumber() {
-    py_cmembers_versioned(theSysModuleObject(), "hexversion", result, major_version().toString())
+    result.asBuiltin() = Builtin::special("sys").getMember("hexversion")
 }
 
 Object theSysVersionString() {
-    py_cmembers_versioned(theSysModuleObject(), "version", result, major_version().toString())
+    result.asBuiltin() = Builtin::special("sys").getMember("version")
 }
 
 
@@ -75,7 +76,6 @@ class VersionGuard extends ConditionBlock {
 
     VersionGuard() {
         exists(VersionTest v |
-            PointsTo::points_to(this.getLastNode(), _, v, _, _) or
             PointsTo::points_to(this.getLastNode(), _, _, _, v)
         )
     }
@@ -83,7 +83,6 @@ class VersionGuard extends ConditionBlock {
     predicate isTrue() {
         exists(VersionTest v |
             v.isTrue() |
-            PointsTo::points_to(this.getLastNode(), _, v, _, _) or
             PointsTo::points_to(this.getLastNode(), _, _, _, v)
         )
     }

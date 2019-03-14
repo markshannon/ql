@@ -1,13 +1,86 @@
 import python
 private import semmle.python.pointsto.Base
+private import semmle.python.pointsto.PointsTo
 private import semmle.python.types.Builtins
 
-private cached predicate is_an_object(@py_object obj) {
-    /* CFG nodes for numeric literals, all of which have a @py_cobject for the value of that literal */
-    obj instanceof ControlFlowNode and
-    not obj.(ControlFlowNode).getNode() instanceof ImmutableLiteral
+private newtype TObject =
+    TBuiltinObject(Builtin bltn) { any() }
     or
-    obj instanceof Builtin
+    TSourceObject(ControlFlowNode obj, TObject cls) {
+        not obj.(ControlFlowNode).getNode() instanceof ImmutableLiteral
+        and
+        (
+            obj.getNode() instanceof CallableExpr and cls = thePyFunctionType()
+            or
+            cls = simpleClass(obj.getNode())
+            or
+            PointsTo::instantiation(obj, _, cls)
+            or
+            kwargs_points_to(obj, cls)
+            or
+            varargs_points_to(obj, cls)
+            or
+            obj.isClass() and cls = theUnknownType()
+            or
+            exists(BuiltinCallable b |
+                obj = PointsTo::get_a_call(b, _) and
+                cls = b.getAReturnType()
+            )
+            or
+            exists(PyFunctionObject func |
+                obj = PointsTo::get_a_call(func, _) and
+                func.getFunction().isGenerator() and
+                cls = theGeneratorType()
+            )
+            or
+            obj.getNode().(Parameter).isSelf() and
+            exists(FunctionObject meth, Function scope |
+                meth.getFunction() = scope |
+                obj.getScope() = scope and
+                scope.getScope() = cls.(ClassObject).getPyClass()
+            )
+        )
+    }
+
+
+/** Gets the class of this object for simple cases, namely constants, functions, 
+ * comprehensions and built-in objects.
+ *
+ *  This exists primarily for internal use. Use getAnInferredType() instead.
+ */
+private ClassObject simpleClass(AstNode obj) {
+    result = comprehension(obj)
+    or
+    result = collection_literal(obj)
+    or
+    result = string_literal(obj)
+    or
+    obj instanceof CallableExpr and result = thePyFunctionType()
+    or
+    obj instanceof Module and result = theModuleType()
+}
+
+
+library class ClassDecl extends @py_object {
+
+    ClassDecl() {
+        this.(Builtin).isClass() and not this = Builtin::unknownType()
+        or
+        this.(ControlFlowNode).isClass()
+    }
+
+    string toString() {
+        result = "ClassDecl"
+    }
+
+    predicate declaresAttribute(string name) {
+        exists(this.(Builtin).getMember(name))
+        or
+        exists(Class cls |
+            cls.getParent() = this.(ControlFlowNode).getNode() |
+            exists(SsaVariable var | name = var.getId() and var.getAUse() = cls.getANormalExit())
+        )
+    }
 }
 
 /** Instances of this class represent objects in the Python program. However, since
@@ -25,11 +98,7 @@ private cached predicate is_an_object(@py_object obj) {
  *  refer to any objects. However, for many important objects such as classes and functions, 
  *  there is a one-to-one relation.
  */
-class Object extends @py_object {
-
-    Object() {
-        is_an_object(this)
-    }
+class Object extends TObject {
 
     /** Gets an inferred type for this object, without using inter-procedural analysis.
      * WARNING: The lack of context makes this less accurate than f.refersTo(this, result, _)
@@ -59,11 +128,15 @@ class Object extends @py_object {
      * for a control flow node 'f'.
      */
     AstNode getOrigin() {
-        py_flow_bb_node(this, result, _, _)
+        result = this.getCfgNode().getNode()
     }
 
     private predicate hasOrigin() {
-        py_flow_bb_node(this, _, _, _)
+        this = TSourceObject(_, _)
+    }
+
+    ControlFlowNode getCfgNode() {
+        this = TSourceObject(result, _)
     }
 
     predicate hasLocationInfo(string filepath, int bl, int bc, int el, int ec) {
@@ -74,7 +147,7 @@ class Object extends @py_object {
 
     /** INTERNAL -- Do not use */
     Builtin asBuiltin() {
-        result = this
+        this = TBuiltinObject(result)
     }
 
     string toString() {
@@ -147,14 +220,34 @@ class Object extends @py_object {
             or
             s.getS() != "" and result = true
         )
-    }
-
-    final predicate maybe() {
-        not exists(this.booleanValue())
+        or
+        exists(Builtin b | b = this.asBuiltin() | b.isClass()) and result = true
+        or
+        exists(ControlFlowNode f | TSourceObject(f, _) = this | f.isClass()) and result = true
+        or
+        exists(Module m | m.getEntryNode() = this.getCfgNode()) and result = true
+        or
+        this.asBuiltin().isModule() and result = true
+        or
+        this instanceof NonEmptyTupleObject and result = true
+        or
+        this.(NumericObject).intValue() != 0 and result = true
+        or
+        this.(NumericObject).intValue() = 0 and result = false
+        or
+        this.(NumericObject).floatValue() != 0 and result = true
+        or
+        this.(NumericObject).floatValue() = 0 and result = false
+        or
+        this.(StringObject).getText() = "" and result = false
+        or
+        this.(StringObject).getText() != "" and result = true
     }
 
     predicate notClass() {
-        any()
+        exists(Builtin b | b = this.asBuiltin() | not b.isClass())
+        or
+        exists(ControlFlowNode f | f = this.getCfgNode() | not f.isClass())
     }
 
     /** Holds if this object can be referred to by `longName`
@@ -179,6 +272,25 @@ class Object extends @py_object {
             cm.getFunction() = this
         )
     }
+
+    ClassDecl getClassDeclaration() {
+        result = this.asBuiltin()
+        or
+        result = this.getCfgNode()
+    }
+
+    predicate isInstance() {
+        exists(ClassObject cls, ControlFlowNode src |
+            this = TSourceObject(_, cls) and
+            src = this.getCfgNode() and
+            not src instanceof ClassDecl and
+            cls != theModuleType()
+        )
+    }
+
+   predicate maybe() {
+       this.isInstance()
+   }
 
 }
 
@@ -236,20 +348,6 @@ class NumericObject extends Object {
         this.asBuiltin().getClass() = theFloatType().asBuiltin()
     }
 
-    /** Gets the Boolean value that this object
-     *  would evaluate to in a Boolean context,
-     * such as `bool(x)` or `if x: ...`
-     */
-    override boolean booleanValue() {
-        this.intValue() != 0 and result = true
-        or
-        this.intValue() = 0 and result = false
-        or
-        this.floatValue() != 0 and result = true
-        or
-        this.floatValue() = 0 and result = false
-    }
-
     /** Gets the value of this object if it is a constant integer and it fits in a QL int */ 
     int intValue() {
         (
@@ -296,12 +394,6 @@ class StringObject extends Object {
         this.getText().regexpMatch("^\\p{ASCII}*$")
     }
 
-    override boolean booleanValue() {
-        this.getText() = "" and result = false
-        or
-        this.getText() != "" and result = true
-    }
-
     /** Gets the text for this string */
     cached string getText() {
         exists(string quoted_string |
@@ -321,9 +413,15 @@ abstract class SequenceObject extends Object {
 
     /** Gets the length of this sequence */
     int getLength() {
-        result = strictcount(this.getBuiltinElement(_))
+        exists(Builtin b |
+            b = this.asBuiltin() and
+            result = strictcount(int n | exists(b.getItem(n)))
+        )
         or
-        result = strictcount(this.getSourceElement(_))
+        exists(SequenceNode s |
+            s = this.getCfgNode() |
+            result = strictcount(int n | exists(s.getElement(n)))
+        )
     }
 
     /** Gets the nth item of this builtin sequence */
@@ -333,7 +431,7 @@ abstract class SequenceObject extends Object {
 
     /** Gets the nth source element of this sequence */
     ControlFlowNode getSourceElement(int n) {
-        result = this.(SequenceNode).getElement(n)
+        result = this.getCfgNode().(SequenceNode).getElement(n)
     }
 
     Object getInferredElement(int n) {
@@ -349,9 +447,9 @@ class TupleObject extends SequenceObject {
     TupleObject() {
         this.asBuiltin().getClass() = theTupleType().asBuiltin()
         or
-        this instanceof TupleNode
+        this.getCfgNode() instanceof TupleNode
         or
-        exists(Function func | func.getVararg().getAFlowNode() = this)
+        exists(Function func | func.getVararg().getAFlowNode() = this.getCfgNode())
     }
 
 }
@@ -371,11 +469,7 @@ module TupleObject {
 class NonEmptyTupleObject extends TupleObject {
 
     NonEmptyTupleObject() {
-        exists(Function func | func.getVararg().getAFlowNode() = this)
-    }
-
-    override boolean booleanValue() {
-        result = true
+        exists(Function func | func.getVararg().getAFlowNode() = this.getCfgNode())
     }
 
 }
@@ -386,7 +480,7 @@ class ListObject extends SequenceObject {
     ListObject() {
         this.asBuiltin().getClass() = theListType().asBuiltin()
         or
-        this instanceof ListNode
+        this.getCfgNode() instanceof ListNode
     }
 
 }
@@ -478,6 +572,19 @@ module Object {
     }
 
 }
+
+
+/** Gets the pseudo-object representing an unknown value */
+Object unknownValue() {
+    result = TBuiltinObject(Builtin::unknown())
+}
+
+
+/** The builtin class 'list' */
+ClassObject theListType() {
+    result = TBuiltinObject(Builtin::special("list"))
+}
+
 
 
 private ClassObject comprehension(Expr e) {

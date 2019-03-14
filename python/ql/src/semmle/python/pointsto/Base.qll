@@ -16,9 +16,9 @@ module BasePointsTo {
     pragma [noinline]
     predicate points_to(ControlFlowNode f, Object value, ControlFlowNode origin) {
     (
-            f.isLiteral() and value = f and not f.getNode() instanceof ImmutableLiteral
+            f.isLiteral() and value.getCfgNode() = f and not f.getNode() instanceof ImmutableLiteral
             or
-            f.isFunction() and value = f
+            f.isFunction() and value.getCfgNode() = f
         ) and origin = f
     }
 }
@@ -74,20 +74,28 @@ private ClassObject collection_literal(Expr e) {
 }
 
 private int tuple_index_value(Object t, int i) {
-    result = t.(TupleNode).getElement(i).getNode().(Num).getN().toInt()
+    i in [0..2] and
+    exists(TupleNode tuple |
+        tuple = t.getCfgNode() |
+        result = tuple.getElement(i).getNode().(Num).getN().toInt()
+        or
+        not exists(tuple.getElement(i)) and result = 0
+    )
     or
-    exists(Object item |
-         py_citems(t, i, item) and
-        result = item.(NumericObject).intValue()
+    i in [0..2] and
+    exists(Builtin tuple |
+        tuple = t.asBuiltin() |
+        exists(NumericObject item |
+            item.asBuiltin() = tuple.getItem(i) and
+            result = item.intValue()
+        )
+        or
+        not exists(tuple.getItem(i)) and result = 0
     )
 }
 
 pragma [noinline]
 int version_tuple_value(Object t) {
-    not exists(tuple_index_value(t, 1)) and result = tuple_index_value(t, 0)*10
-    or
-    not exists(tuple_index_value(t, 2)) and result = tuple_index_value(t, 0)*10 + tuple_index_value(t, 1)
-    or
     tuple_index_value(t, 2) = 0 and result = tuple_index_value(t, 0)*10 + tuple_index_value(t, 1)
     or
     tuple_index_value(t, 2) > 0 and result = tuple_index_value(t, 0)*10 + tuple_index_value(t, 1) + 1
@@ -133,10 +141,10 @@ predicate class_declares_attribute(ClassObject cls, string name) {
         class_defines_name(defn, name)
     )
     or
-    exists(Builtin o |
-        o = cls.asBuiltin().getMember(name) and 
+    exists(Builtin o, Builtin c |
+        c = cls.asBuiltin() and o = c.getMember(name) and
         not exists(Builtin sup |
-            sup = cls.asBuiltin().getBaseClass() and
+            sup = c.getBaseClass() and
             o = sup.getMember(name)
         )
     )
@@ -524,12 +532,7 @@ predicate import_from_dot_in_init(ImportExprNode f) {
 
 /** Gets the pseudo-object representing the value referred to by an undefined variable */
 Object undefinedVariable() {
-    py_special_objects(result, "_semmle_undefined_value")
-}
-
-/** Gets the pseudo-object representing an unknown value */
-Object unknownValue() {
-    py_special_objects(result, "_1")
+    result.asBuiltin() = Builtin::special("_semmle_undefined_value")
 }
 
 BuiltinCallable theTypeNewMethod() {
@@ -543,7 +546,7 @@ predicate potential_builtin_points_to(NameNode f, Object value, ClassObject cls,
     (
         builtin_name_points_to(f.getId(), value, cls)
         or
-        not exists(Object::builtin(f.getId())) and value = unknownValue() and cls = theUnknownType()
+        not exists(Builtin::builtin(f.getId())) and value = unknownValue() and cls = theUnknownType()
     )
 }
 
@@ -583,9 +586,9 @@ module BaseFlow {
 
 /** Points-to for syntactic elements where context is not relevant */
 predicate simple_points_to(ControlFlowNode f, Object value, ClassObject cls, ControlFlowNode origin) {
-    kwargs_points_to(f, cls) and value = f and origin = f
+    kwargs_points_to(f, cls) and value.getCfgNode() = f and origin = f
     or
-    varargs_points_to(f, cls) and value = f and origin = f
+    varargs_points_to(f, cls) and value.getCfgNode() = f and origin = f
     or
     BasePointsTo::points_to(f, value, origin) and cls = simple_types(value)
     or
@@ -614,10 +617,7 @@ Module theCollectionsAbcModule() {
     result.getName() = "_collections_abc"
 }
 
-ClassObject collectionsAbcClass(string name) {
-     exists(Class cls |
-        result.getPyClass() = cls and
-        cls.getName() = name and
-        cls.getScope() = theCollectionsAbcModule()
-    )
+Class collectionsAbcClass(string name) {
+    result.getName() = name and
+    result.getScope() = theCollectionsAbcModule()
 }

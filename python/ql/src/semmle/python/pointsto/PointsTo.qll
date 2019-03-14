@@ -56,7 +56,7 @@ library class CfgOrigin extends @py_object {
 
     pragma[inline]
     CfgOrigin fix(ControlFlowNode here) {
-        if this = unknownValue() then
+        if this = Builtin::unknown() then
             result = here
         else
             result = this
@@ -106,8 +106,14 @@ module CfgOrigin {
         result = f
     }
 
+    CfgOrigin fromObject(Object o) {
+        o.isBuiltin() and result = unknown()
+        or
+        result = o.getCfgNode()
+    }
+
     CfgOrigin unknown() {
-        result = unknownValue()
+        result = unknownValue().asBuiltin()
     }
 
 }
@@ -163,7 +169,7 @@ module PointsTo {
         pragma [nomagic]
         private predicate decorator_call(Object method, ClassObject decorator, FunctionObject func) {
             exists(CallNode f, PointsToContext imp |
-                method = f and imp.isImport() and
+                method.getCfgNode() = f and imp.isImport() and
                 points_to(f.getFunction(), imp, decorator, _, _) and
                 points_to(f.getArg(0), imp, func, _, _)
             )
@@ -195,14 +201,14 @@ module PointsTo {
                     isModuleStateVariable(var) and var.getAUse() = init.getANormalExit() and
                     context.isImport() and
                     SSA::ssa_variable_named_attribute_points_to(var, context, name, undefinedVariable(), _, _) and
-                    origin = value and
+                    origin = CfgOrigin::fromObject(value) and
                     value = package.submodule(name) and
                     cls = theModuleType()
                 )
             )
             or
             package.hasNoInitModule() and
-            value = package.submodule(name) and cls = theModuleType() and origin = CfgOrigin::fromCfgNode(value)
+            value = package.submodule(name) and cls = theModuleType() and origin = CfgOrigin::fromObject(value)
         }
 
         /** INTERNAL -- `Use m.attributeRefersTo(name, obj, origin)` instead.
@@ -380,9 +386,14 @@ module PointsTo {
             or
             name_maybe_imported_from(mod, name) and not any(ImportStar i).getScope() = m and result = false and
             not exists(SsaVariable var | name = var.getId() and var.getAUse() = m.getANormalExit()) and
-            not exists(PackageObject pack |
-                pack.getInitModule() = mod and
-                exists(pack.submodule(name))
+            (
+                not m.isInitModule()
+                or
+                m.isInitModule() and
+                exists(Folder package |
+                    package = m.getPackageFolder() and
+                    not exists(package.getSourceFile(name))
+                )
             )
             or
             exists(Object obj |
@@ -421,9 +432,9 @@ module PointsTo {
         (
             pack.hasNoInitModule()
             or
-            exists(ModuleObject init |
-                pack.getInitModule() = init |
-                not init.getModule().declaredInAll(_) and name.charAt(0) != "_"
+            exists(Module init |
+                pack.getInitModule().getModule() = init |
+                not init.declaredInAll(_) and name.charAt(0) != "_"
             )
         ) and result = true
         or
@@ -520,7 +531,7 @@ module PointsTo {
     private predicate points_to_candidate(ControlFlowNode f, PointsToContext context, Object value, ClassObject cls, ControlFlowNode origin) {
         simple_points_to(f, value, cls, origin) and context.appliesToScope(f.getScope())
         or
-        f.isClass() and value = f  and origin = f and context.appliesToScope(f.getScope()) and
+        f.isClass() and value.getCfgNode() = f  and origin = f and context.appliesToScope(f.getScope()) and
         cls = Types::class_get_meta_class(value)
         or
         exists(boolean b |
@@ -659,7 +670,7 @@ module PointsTo {
             Types::six_add_metaclass(f, value, meta) and
             points_to(meta, context, cls, _, _)
         ) and
-        origin = value
+        origin = value.getCfgNode()
     }
 
     /** Holds if `obj.name` points to `(value, cls, orig)`. */
@@ -669,9 +680,10 @@ module PointsTo {
         Types::class_attribute_lookup(obj, name, value, cls, orig) and cls != theStaticMethodType() and cls != theClassMethodType()
         or
         /* Static methods of the class */
-        exists(CallNode sm | 
-            Types::class_attribute_lookup(obj, name, sm, theStaticMethodType(), _) and sm.getArg(0) = value and 
-            cls = thePyFunctionType() and orig = CfgOrigin::fromCfgNode(sm.getArg(0))
+        exists(Object sm, ControlFlowNode arg0 |
+            arg0 = sm.getCfgNode().(CallNode).getArg(0) and
+            Types::class_attribute_lookup(obj, name, sm, theStaticMethodType(), _) and arg0 = value.getCfgNode() and 
+            cls = thePyFunctionType() and orig = CfgOrigin::fromCfgNode(arg0)
         )
         or
         /* Module attributes */
@@ -689,9 +701,11 @@ module PointsTo {
             )
             or
             /* Static methods on the class of the instance */
-            exists(CallNode sm, ClassObject icls |
+            exists(Object sm, ClassObject icls, ControlFlowNode arg0 |
+                arg0 = sm.getCfgNode().(CallNode).getArg(0) and
                 points_to(f.getObject(name), context, _, icls, _) and
-                Types::class_attribute_lookup(icls, name, sm, theStaticMethodType(), _) and sm.getArg(0) = value and cls = thePyFunctionType() and origin = value
+                Types::class_attribute_lookup(icls, name, sm, theStaticMethodType(), _) and arg0 = value.getCfgNode() and 
+                cls = thePyFunctionType() and origin = arg0
             )
             or
             /* Unknown instance attributes */
@@ -699,8 +713,8 @@ module PointsTo {
                 obj_node = f.getObject(name) and
                 not obj_node.(NameNode).isSelf() and
                 points_to(obj_node, context, x, icls, _) and
-                (not x instanceof ModuleObject and not x instanceof ClassObject) and
-                not icls.isBuiltin() and
+                x.isInstance() and
+                exists(icls.getPyClass()) and
                 value = unknownValue() and cls = theUnknownType() and origin = f
             )
         )
@@ -763,7 +777,10 @@ module PointsTo {
                 SSA::ssa_variable_named_attribute_points_to(dollar, context, name, value, cls, orig)
             )
             or
-            not mod.getSourceModule() = f.getEnclosingModule() and
+            (
+                mod.isBuiltin() or
+                mod.getSourceModule() != f.getEnclosingModule()
+            ) and
             Layer::module_attribute_points_to(mod, name, value, cls, orig)
         )
         or
@@ -817,7 +834,7 @@ module PointsTo {
             points_to(left, context, _, cls, _) and
             points_to(right, context, _, cls, _)
         ) and
-        value = origin and origin = b
+        value.getCfgNode() = origin and origin = b
     }
 
     pragma [noinline]
@@ -827,9 +844,9 @@ module PointsTo {
             exists(Object lobj, Object robj |
                 points_to(left, context, lobj, _, _) and
                 points_to(right, context, robj, _, _) |
-                not Filters::comparable_value(lobj)
+                Filters::incomparable_value(lobj)
                 or
-                not Filters::comparable_value(robj)
+                Filters::incomparable_value(robj)
             )
         )
     }
@@ -843,8 +860,8 @@ module PointsTo {
                 points_to(right, context, tuple, _, _)
                 |
                 lobj = tuple.getBuiltinElement(_) and result = theTrueObject()
-                or
-                not lobj = tuple.getBuiltinElement(_) and result = theFalseObject()
+                //or
+                //not lobj = tuple.getBuiltinElement(_) and result = theFalseObject()
             )
         )
     }
@@ -991,8 +1008,8 @@ module PointsTo {
 
     private predicate subscript_points_to(SubscriptNode sub, PointsToContext context, Object value, ClassObject cls, ControlFlowNode origin) {
         exists(Object unknownCollection |
-            varargs_points_to(unknownCollection, _) or
-            kwargs_points_to(unknownCollection, _)
+            varargs_points_to(unknownCollection.getCfgNode(), _) or
+            kwargs_points_to(unknownCollection.getCfgNode(), _)
             |
             sub.isLoad() and
             points_to(sub.getValue(), context, unknownCollection, _, _) and
@@ -1108,7 +1125,7 @@ module PointsTo {
                  call_to_type(f, arg, context) |
                  points_to(arg, context, _, value, _)
              ) and
-             not exists(value.getOrigin()) and
+             value.isBuiltin() and
              origin = f and cls = theTypeType()
          }
 
@@ -1125,7 +1142,7 @@ module PointsTo {
              (
                 cls = theNoneType() and value = theNoneObject()
                 or
-                cls != theNoneType() and value = f
+                cls != theNoneType() and value.getCfgNode() = f
              )
          }
 
@@ -1180,7 +1197,7 @@ module PointsTo {
          predicate call_to_generator_points_to(CallNode f, PointsToContext context, Object value, ClassObject cls, ControlFlowNode origin) {
              exists(PyFunctionObject func |
                  f = get_a_call(func, context) |
-                 func.getFunction().isGenerator() and origin = f and value = f and cls = theGeneratorType()
+                 func.getFunction().isGenerator() and origin = f and value.getCfgNode() = f and cls = theGeneratorType()
              )
          }
 
@@ -1220,7 +1237,7 @@ module PointsTo {
              call_to_type_known_builtin_class_points_to(f, context, value, cls, origin)
              or
              /* Case 3 */
-             instantiation(f, context, cls) and value = f and f = origin
+             instantiation(f, context, cls) and value.getCfgNode() = f and f = origin
              or
              /* Case 4 */
              call_points_to_builtin_function(f, context, value, cls, origin)
@@ -1629,9 +1646,9 @@ module PointsTo {
                 param = def.getDefiningNode() |
                 varargs_points_to(param, cls) and value = TupleObject::empty() and origin = param
                 or
-                varargs_points_to(param, cls) and value = param and origin = param
+                varargs_points_to(param, cls) and value.getCfgNode() = param and origin = param
                 or
-                kwargs_points_to(param, cls) and value = param and origin = param
+                kwargs_points_to(param, cls) and value.getCfgNode() = param and origin = param
             )
             or
             exists(PointsToContext caller, CallNode call, FunctionObject func, Parameter p |
@@ -1669,7 +1686,7 @@ module PointsTo {
                 context.isRuntime() and context.appliesToScope(scope) and
                 scope.getScope() = cls.getPyClass() and
                 Types::concrete_class(cls) and
-                value = def.getDefiningNode() and origin = value and
+                origin = def.getDefiningNode() and origin = value.getCfgNode() and
                 /* We want to allow decorated functions, otherwise we lose a lot of useful information.
                  * However, we want to exclude any function whose arguments are permuted by the decorator.
                  * In general we can't do that, but we can special case the most common ones.
@@ -1740,7 +1757,7 @@ module PointsTo {
                 package.getInitModule().getModule() = def.getDefiningNode().getScope() |
                 value = package.submodule(def.getSourceVariable().getName()) and
                 cls = theModuleType() and
-                origin = value and
+                origin = value.getCfgNode() and
                 context.isImport()
             )
         }
@@ -2301,10 +2318,10 @@ module PointsTo {
         predicate equatable_value(Object o) {
             comparable_value(o)
             or
-            o.(ControlFlowNode).getScope() instanceof Module and
+            o.getCfgNode().getScope() instanceof Module and
             exists(ClassObject c |
                 c.isBuiltin() and
-                points_to(o.(CallNode).getFunction(), _, c, _, _)
+                points_to(o.getCfgNode().(CallNode).getFunction(), _, c, _, _)
             )
         }
 
@@ -2312,11 +2329,21 @@ module PointsTo {
          * True for basic objects like 3 or None.
          */
         predicate comparable_value(Object o) {
-            o.isBuiltin() and not o = unknownValue() and not o = undefinedVariable()
+            o.isBuiltin() and o != unknownValue() and o != undefinedVariable()
             or
             exists(o.booleanValue())
         }
 
+        /** Holds if meaningful comparisons cannot be made with `o`.
+         * False for basic objects like 3 or None.
+         */
+        predicate incomparable_value(Object o) {
+            o = unknownValue()
+            or
+            o = undefinedVariable()
+            or
+            exists(o.getCfgNode())
+        }
 
         /** Holds if the test on `use` is a test that we can potentially understand */
         private predicate comprehensible_test(ControlFlowNode test, ControlFlowNode use) {
@@ -2453,7 +2480,7 @@ module PointsTo {
          *
          * Gets the nth base class of the class. */
         cached Object class_base_type(ClassObject cls, int n) {
-            not result = unknownValue() and
+            result != unknownValue() and
             exists(ClassExpr cls_expr | cls.getOrigin() = cls_expr |
                 points_to(cls_expr.getBase(n).getAFlowNode(), _, result, _, _)
                 or
@@ -2466,7 +2493,7 @@ module PointsTo {
         }
 
         private Object py_base_type(ClassObject cls, int n) {
-            not result = unknownValue() and
+            result != unknownValue() and
             exists(ClassExpr cls_expr | cls.getOrigin() = cls_expr |
                 points_to(cls_expr.getBase(n).getAFlowNode(), _, result, _, _)
             )
@@ -2494,8 +2521,13 @@ module PointsTo {
          * Holds if a call to this class will return an instance of this class.
          */
         cached predicate callToClassWillReturnInstance(ClassObject cls) {
+            cls.isBuiltin()
+            or
             callToClassWillReturnInstance(cls, 0) and
-            not callToPythonClassMayNotReturnInstance(cls.getPyClass())
+            exists(Class pycls |
+                pycls = cls.getPyClass() and
+                not callToPythonClassMayNotReturnInstance(pycls)
+            )
         }
 
         private predicate callToClassWillReturnInstance(ClassObject cls, int n) {
@@ -2558,10 +2590,21 @@ module PointsTo {
         }
 
         cached boolean is_subclass_bool(ClassObject cls, ClassObject sup) {
-            if abcSubclass(cls, sup) then (
-                /* Hard-code some abc subclass pairs -- In future we may change this to use stubs. */
-                result = true
-            ) else (
+            /* Hard-code some abc subclass pairs -- In future we may change this to use stubs. */
+            abcSubclass(cls.asBuiltin(), sup.getPyClass()) and result = true
+            or
+            (
+                exists(Builtin b, Class s |
+                    b = cls.asBuiltin() and s = sup.getPyClass() and
+                    not abcSubclass(b, s)
+                )
+                or
+                exists(cls.getCfgNode())
+                or
+                sup.isBuiltin()
+            )
+            and
+            (
                 sup = class_base_type(cls, _) and result = true
                 or
                 is_subclass_bool(class_base_type(cls, _), sup) = true and result = true
@@ -2570,18 +2613,18 @@ module PointsTo {
             )
         }
 
-        private predicate abcSubclass(ClassObject cls, ClassObject sup) {
-            cls = theListType() and sup = collectionsAbcClass("Iterable")
+        private predicate abcSubclass(Builtin cls, Class sup) {
+            cls = Builtin::special("list") and sup = collectionsAbcClass("Iterable")
             or
-            cls = theSetType() and sup = collectionsAbcClass("Iterable")
+            cls = Builtin::special("set") and sup = collectionsAbcClass("Iterable")
             or
-            cls = theDictType() and sup = collectionsAbcClass("Iterable")
+            cls = Builtin::special("dict") and sup = collectionsAbcClass("Iterable")
             or
-            cls = theSetType() and sup = collectionsAbcClass("Set")
+            cls = Builtin::special("set") and sup = collectionsAbcClass("Set")
             or
-            cls = theListType() and sup = collectionsAbcClass("Sequence")
+            cls = Builtin::special("list") and sup = collectionsAbcClass("Sequence")
             or
-            cls = theDictType() and sup = collectionsAbcClass("Mapping")
+            cls = Builtin::special("dict") and sup = collectionsAbcClass("Mapping")
         }
 
         cached boolean is_improper_subclass_bool(ClassObject cls, ClassObject sup) {
@@ -2673,10 +2716,10 @@ module PointsTo {
             (
                 mro.isEmpty()
                 or
-                exists(ClassObject head, ClassList tail |
-                    head = mro.getHead() and tail = mro.getTail() |
+                exists(ClassDecl head, ClassList tail |
+                    head = mro.getHead().getClassDeclaration() and tail = mro.getTail() |
                     does_not_have_attribute(tail, name) and
-                    not class_declares_attribute(head, name)
+                    not head.declaresAttribute(name)
                 )
             )
         }
@@ -2781,7 +2824,10 @@ module PointsTo {
         private boolean has_declared_metaclass(ClassObject cls) {
             exists(cls.asBuiltin().getClass()) and result = true
             or
-            result = has_six_add_metaclass(cls).booleanOr(has_metaclass_var_metaclass(cls))
+            exists(Class pycls |
+                pycls = cls.getPyClass() and
+                result = has_six_add_metaclass(pycls).booleanOr(has_metaclass_var_metaclass(cls))
+            )
         }
 
         private EssaVariable metaclass_var(Class cls) {
@@ -2835,32 +2881,35 @@ module PointsTo {
         }
 
         private Object six_add_metaclass_function() {
-            exists(Module six, FunctionExpr add_metaclass |
-                add_metaclass.getInnerScope().getName() = "add_metaclass" and
-                add_metaclass.getScope() = six and
-                result.getOrigin() = add_metaclass
+            result.getOrigin() = six_add_metaclass_function_expr()
+        }
+
+        private FunctionExpr six_add_metaclass_function_expr() {
+            exists(Module six |
+                result.getInnerScope().getName() = "add_metaclass" and
+                result.getScope() = six
             )
         }
 
-        private ControlFlowNode decorator_call_callee(ClassObject cls) {
+        private ControlFlowNode decorator_call_callee(Class cls) {
             exists(CallNode decorator_call, CallNode decorator |
-                 decorator_call.getArg(0) = cls and
+                 decorator_call.getNode() = cls.getADecorator() and
                  decorator = decorator_call.getFunction() and
                  result = decorator.getFunction()
             )
         }
 
         /** INTERNAL -- Do not use */
-        cached boolean has_six_add_metaclass(ClassObject cls) {
+        cached boolean has_six_add_metaclass(Class cls) {
             exists(ControlFlowNode callee, Object func |
                 callee = decorator_call_callee(cls) and
                 points_to(callee, _, func, _, _) |
                 func = six_add_metaclass_function() and result = true
                 or
-                not func = six_add_metaclass_function() and result = false
+                func != six_add_metaclass_function() and result = false
             )
             or
-            not exists(six_add_metaclass_function()) and result = false
+            not exists(six_add_metaclass_function_expr()) and result = false
             or
             not exists(decorator_call_callee(cls)) and result = false
         }
@@ -2868,7 +2917,7 @@ module PointsTo {
         /** INTERNAL -- Do not use */
         cached predicate six_add_metaclass(CallNode decorator_call, ClassObject decorated, ControlFlowNode metaclass) {
             exists(CallNode decorator |
-                decorator_call.getArg(0) = decorated and
+                decorator_call.getArg(0) = decorated.getCfgNode() and
                 decorator = decorator_call.getFunction() and
                 decorator.getArg(0) = metaclass |
                 points_to(decorator.getFunction(), _, six_add_metaclass_function(), _, _)
@@ -2904,16 +2953,12 @@ module PointsTo {
             cls = theObjectType()
             or
             instances_always_true(cls, 0) and
-            not exists(string meth |
-               class_declares_attribute(cls, meth) |
-               meth = "__bool__" or meth = "__len__" or
-               meth = "__nonzero__" and major_version() = 2
-            )
+            cls.doesntOverrideTruthiness()
         }
 
         /** Holds if instances of class `cls` are always truthy. */
         cached predicate instances_always_true(ClassObject cls, int n) {
-            not cls = theNoneType() and
+            cls != theNoneType() and
             n = class_base_count(cls)
             or
             instances_always_true(cls, n+1) and
@@ -2955,7 +3000,7 @@ class SuperCall extends Object {
 
     SuperCall() {
         exists(CallNode call, PointsToContext context |
-            call = this and
+            call = this.getCfgNode() and
             PointsTo::points_to(call.getFunction(), _, theSuperType(), _, _) |
             PointsTo::points_to(call.getArg(0), context, start, _, _) and
             self.getASourceUse() = call.getArg(1)
@@ -2982,7 +3027,7 @@ class SuperCall extends Object {
     }
 
     predicate instantiation(PointsToContext ctx, ControlFlowNode f) {
-        PointsTo::points_to(this.(CallNode).getArg(0), ctx, start, _, _) and f = this
+        PointsTo::points_to(this.getCfgNode().(CallNode).getArg(0), ctx, start, _, _) and f = this.getCfgNode()
     }
 
     EssaVariable getSelf() {
@@ -3003,7 +3048,7 @@ class SuperBoundMethod extends Object {
     cached
     SuperBoundMethod() {
         exists(ControlFlowNode object |
-            this.(AttrNode).getObject(name) = object |
+            this.getCfgNode().(AttrNode).getObject(name) = object |
             PointsTo::points_to(object, _, superObject, _, _) and
             startType = superObject.startType()
         )
@@ -3017,7 +3062,7 @@ class SuperBoundMethod extends Object {
     }
 
     predicate instantiation(PointsToContext ctx, ControlFlowNode f) {
-        PointsTo::points_to(this.(AttrNode).getObject(name), ctx, superObject, _, _) and f = this
+        PointsTo::points_to(this.getCfgNode().(AttrNode).getObject(name), ctx, superObject, _, _) and f = this.getCfgNode()
     }
 
     EssaVariable getSelf() {

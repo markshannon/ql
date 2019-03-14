@@ -24,20 +24,17 @@ class ClassObject extends Object {
         this.getOrigin() instanceof ClassExpr or
         exists(Builtin o | o.getClass() = this.asBuiltin()) or
         this.asBuiltin().getBaseClass().inheritsFromType() or
-        this.asBuiltin() = Builtin::special("_semmle_unknown_type")
-    }
-
-    private predicate isStr() {
-        this.asBuiltin() = Builtin::special("bytes") and major_version() = 2
-        or
-        this.asBuiltin() = Builtin::special("unicode") and major_version() = 3
+        this.asBuiltin() = Builtin::unknownType()
     }
 
     /** Gets the short (unqualified) name of this class */
     string getName() {
-        this.isStr() and result = "str"
+        this.asBuiltin().isStr() and result = "str"
         or
-        not this.isStr() and result = this.asBuiltin().getName() and not this = theUnknownType()
+        exists(Builtin b |
+            b = this.asBuiltin() |
+            not b.isStr() and result = b.getName() and not b = Builtin::unknownType()
+        )
         or
         result = this.getPyClass().getName()
     }
@@ -368,10 +365,6 @@ class ClassObject extends Object {
         )
     }
 
-    override boolean booleanValue() {
-        result = true
-    }
-
     /** Gets a call to this class. Note that the call may not create a new instance of
      * this class, as that depends on the `__new__` method of this class.
      */
@@ -379,10 +372,31 @@ class ClassObject extends Object {
         result.getFunction().refersTo(this)
     }
 
-    override predicate notClass() {
-        none()
+    predicate doesntOverrideTruthiness() {
+        exists(Builtin bltn |
+            bltn = this.asBuiltin() |
+            bltn = Builtin::special("object")
+            or
+            forall(string meth |
+                bltn.declaresMember(meth) |
+                not overrides_bool_method(meth)
+            )
+        )
+        or
+        exists(Class cls |
+            cls = this.getPyClass() |
+            forall(string meth |
+                exists(SsaVariable var | meth = var.getId() and var.getAUse() = cls.getANormalExit()) |
+                not overrides_bool_method(meth)
+            )
+        )
     }
+    
+}
 
+private predicate overrides_bool_method(string meth) {
+    meth = "__bool__" or meth = "__len__" or
+    meth = "__nonzero__" and major_version() = 2
 }
 
 /** The 'str' class. This is the same as the 'bytes' class for
@@ -463,11 +477,6 @@ ClassObject theComplexType() {
 /** The builtin class 'object' */
 ClassObject theObjectType() {
     result.asBuiltin() = Builtin::special("object")
-}
-
-/** The builtin class 'list' */
-ClassObject theListType() {
-    result.asBuiltin() = Builtin::special("list")
 }
 
 /** The builtin class 'dict' */

@@ -5,12 +5,12 @@ private import semmle.python.pointsto.PointsTo
 class BoundMethod extends Object {
 
     BoundMethod() {
-        bound_method(this, _)
+        bound_method(this.getCfgNode(), _)
     }
 
     /* Gets the method 'f' in 'x.f' */
     FunctionObject getMethod() {
-         bound_method(this, result)
+         bound_method(this.getCfgNode(), result)
     }
 
 }
@@ -21,7 +21,7 @@ private predicate bound_method(AttrNode binding, FunctionObject method) {
 
 private predicate decorator_call(Object method, ClassObject decorator, FunctionObject func) {
     exists(CallNode f |
-        method = f and
+        method.getCfgNode() = f and
         f.getFunction().refersTo(decorator) and
         PointsTo::points_to(f.getArg(0), _, func, _, _)
     )

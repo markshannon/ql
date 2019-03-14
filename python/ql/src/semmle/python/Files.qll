@@ -127,6 +127,12 @@ class Folder extends Container {
         result = this.getParent().getImportRoot(n)
     }
 
+    Module getSourceFile(string name) {
+        exists(Module package |
+            package.getPath() = this and
+            result = package.getSubModule(name)
+        )
+    }
 }
 
 /** A container is an abstract representation of a file system object that can

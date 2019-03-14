@@ -65,7 +65,10 @@ private predicate jump_to_defn(ControlFlowNode use, Definition defn) {
         scope_jump_to_defn_attribute(package.getInitModule().getModule(), name, defn)
     )
     or
-    (use instanceof PyFunctionObject or use instanceof ClassObject) and
+    exists(Object o |
+        o.getCfgNode() = use |
+        o instanceof PyFunctionObject or o instanceof ClassObject
+    ) and
     defn.getAstNode() = use.getNode()
 }
 

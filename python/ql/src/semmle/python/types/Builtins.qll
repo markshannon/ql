@@ -25,14 +25,21 @@ class Builtin extends @py_cobject {
     }
 
     Builtin getClass() {
-        py_cobjecttypes(this, result) and not this = unknownValue().asBuiltin()
+        py_cobjecttypes(this, result) and not this = Builtin::unknown()
         or
-        this = unknownValue().asBuiltin() and result = theUnknownType().asBuiltin()
+        this = Builtin::unknown() and result = Builtin::special("_semmle_unknown_type")
     }
 
     Builtin getMember(string name) {
         not name = ".super." and
         py_cmembers_versioned(this, name, result, major_version().toString())
+    }
+
+    predicate declaresMember(string name) {
+        exists(Builtin val |
+            val  = this.getMember(name) and
+            not val = this.getBaseClass().getMember(name)
+        )
     }
 
     Builtin getItem(int index) {
@@ -54,7 +61,17 @@ class Builtin extends @py_cobject {
     }
 
     predicate isClass() {
-        py_cobjecttypes(_, this) or this = theUnknownType().asBuiltin()
+        py_cobjecttypes(_, this) or this = Builtin::unknownType()
+    }
+
+    predicate isModule() {
+        this.getClass() = Builtin::special("ModuleType")
+    }
+
+    predicate isStr() {
+        this = Builtin::special("bytes") and major_version() = 2
+        or
+        this = Builtin::special("unicode") and major_version() = 3
     }
 
 }
@@ -75,4 +92,12 @@ module Builtin {
         py_special_objects(result, name)
     }
 
+    Builtin unknown() {
+        py_special_objects(result, "_1")
+    }
+    
+    Builtin unknownType() {
+        py_special_objects(result, "_semmle_unknown_type")
+    }
+    
 }

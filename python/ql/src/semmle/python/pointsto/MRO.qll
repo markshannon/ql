@@ -137,22 +137,20 @@ class ClassList extends TClassList {
     }
 
     ClassObject findDeclaringClass(string name) {
-        exists(ClassObject head |
-            head = this.getHead() and
-            not head = theUnknownType() |
+        exists(ClassDecl head |
+            head = this.getHead().getClassDeclaration() |
             if head.declaresAttribute(name) then
-                result = head
+                result = this.getHead()
             else
                 result = this.getTail().findDeclaringClass(name)
         )
     }
 
     Object lookup(string name) {
-        exists(ClassObject head |
-            head = this.getHead() and
-            not head = theUnknownType() |
+        exists(ClassDecl head |
+            head = this.getHead().getClassDeclaration() |
             if head.declaresAttribute(name) then
-                result = head.declaredAttribute(name)
+                result = this.getHead().declaredAttribute(name)
             else
                 result = this.getTail().lookup(name)
         )

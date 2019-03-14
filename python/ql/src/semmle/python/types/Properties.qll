@@ -10,7 +10,7 @@ import python
 abstract class PropertyObject extends Object {
   
     PropertyObject() {
-        property_getter(this, _)
+        property_getter(this.getCfgNode(), _)
         or
         this.asBuiltin().getClass() = theBuiltinPropertyType().asBuiltin()
     }
@@ -47,7 +47,7 @@ abstract class PropertyObject extends Object {
 class PythonPropertyObject extends PropertyObject {
 
     PythonPropertyObject() {
-        property_getter(this, _)
+        property_getter(this.getCfgNode(), _)
     }
 
     override string getName() {
@@ -56,7 +56,7 @@ class PythonPropertyObject extends PropertyObject {
 
     /** Gets the getter function of this property */
     override FunctionObject getGetter() {
-         property_getter(this, result)
+         property_getter(this.getCfgNode(), result)
     }
 
     override ClassObject getInferredPropertyType() {
@@ -65,12 +65,12 @@ class PythonPropertyObject extends PropertyObject {
 
     /** Gets the setter function of this property */
     override FunctionObject getSetter() {
-         property_setter(this, result)
+         property_setter(this.getCfgNode(), result)
     }
 
     /** Gets the deleter function of this property */
     override FunctionObject getDeleter() {
-         property_deleter(this, result)
+         property_deleter(this.getCfgNode(), result)
     }
 
 }
@@ -115,8 +115,9 @@ private predicate property_getter(CallNode decorated, FunctionObject getter) {
 private predicate property_setter(CallNode decorated, FunctionObject setter) {
     property_getter(decorated, _)
     and
-    exists(CallNode setter_call, AttrNode prop_setter |
-        prop_setter.getObject("setter").refersTo((Object)decorated) |
+    exists(CallNode setter_call, AttrNode prop_setter, Object obj |
+        prop_setter.getObject("setter").refersTo(obj) and
+        obj.getCfgNode() = decorated |
         setter_call.getArg(0).refersTo(setter)
         and
         setter_call.getFunction() = prop_setter
@@ -130,8 +131,9 @@ private predicate property_setter(CallNode decorated, FunctionObject setter) {
 private predicate property_deleter(CallNode decorated, FunctionObject deleter) {
     property_getter(decorated, _)
     and
-    exists(CallNode deleter_call, AttrNode prop_deleter |
-        prop_deleter.getObject("deleter").refersTo((Object)decorated) |
+    exists(CallNode deleter_call, AttrNode prop_deleter, Object obj |
+        prop_deleter.getObject("deleter").refersTo(obj) and
+        obj.getCfgNode() = decorated |
         deleter_call.getArg(0).refersTo(deleter)
         and
         deleter_call.getFunction() = prop_deleter
