@@ -160,6 +160,16 @@ newtype TObject =
     }
     or
     TSysVersionInfo()
+    or
+    TAbsentModule(string name) {
+        missing_imported_module(_, _, name)
+    }
+    or
+    TAbsentModuleAttribute(TAbsentModule mod, string attrname) {
+        PointsToInternal::pointsTo(any(AttrNode attr).getObject(attrname), _, mod, _)
+        or
+        PointsToInternal::pointsTo(any(ImportMemberNode imp).getModule(attrname), _, mod, _)
+    }
 
 private predicate is_power_2(int n) {
     n = 1 or
@@ -317,6 +327,11 @@ private predicate neither_class_nor_static_method(Function f) {
         )
         or not deco instanceof NameNode
     )
+}
+
+predicate missing_imported_module(ImportExprNode imp, Context ctx, string name) {
+    ctx.isImport() and imp.getNode().getAnImportedModuleName() = name and
+    not exists(Module m | m.getName() = name)
 }
 
 library class ClassDecl extends @py_object {

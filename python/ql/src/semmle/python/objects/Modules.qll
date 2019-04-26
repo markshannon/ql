@@ -250,3 +250,145 @@ class PythonModuleObjectInternal extends ModuleObjectInternal, TPythonModule {
 
 }
 
+class AbsentModuleObjectInternal extends ModuleObjectInternal, TAbsentModule {
+
+    override Builtin getBuiltin() {
+        none()
+    }
+
+    override string toString() {
+        result = "Absent module " + this.getName()
+    }
+
+    override string getName() {
+        this = TAbsentModule(result)
+    }
+
+    override predicate introduced(ControlFlowNode node, PointsToContext context) {
+        missing_imported_module(node, context, _)
+    }
+
+    override ClassDecl getClassDeclaration() {
+        none()
+    }
+
+    override Module getSourceModule() {
+        none()
+    }
+
+    PythonModuleObjectInternal getInitModule() {
+        none()
+    }
+
+    override int intValue() {
+        none()
+    }
+
+    override string strValue() {
+        none()
+    }
+
+    override predicate calleeAndOffset(Function scope, int paramOffset) {
+        none()
+    }
+
+    pragma [noinline] override predicate attribute(string name, ObjectInternal value, CfgOrigin origin) {
+        value = TAbsentModuleAttribute(this, name) and origin = CfgOrigin::unknown()
+    }
+
+    pragma [noinline] override predicate attributesUnknown() { none() }
+
+    override ControlFlowNode getOrigin() {
+        none()
+    }
+
+}
+
+class AbsentModuleAttributeObjectInternal extends ObjectInternal, TAbsentModuleAttribute {
+
+    override Builtin getBuiltin() {
+        none()
+    }
+
+    override string toString() {
+        exists(ModuleObjectInternal mod, string name |
+            this = TAbsentModuleAttribute(mod, name) and
+            result = "Absent module attribute " + mod.getName() + "." + name
+        )
+    }
+
+    override predicate introduced(ControlFlowNode node, PointsToContext context) {
+        exists(ModuleObjectInternal mod, string name |
+            this = TAbsentModuleAttribute(mod, name) |
+            PointsToInternal::pointsTo(node.(AttrNode).getObject(name), context, mod, _)
+            or
+            PointsToInternal::pointsTo(node.(ImportMemberNode).getModule(name), context, mod, _)
+        )
+    }
+
+    override ClassDecl getClassDeclaration() {
+        none()
+    }
+
+    PythonModuleObjectInternal getInitModule() {
+        none()
+    }
+
+    override int intValue() {
+        none()
+    }
+
+    override string strValue() {
+        none()
+    }
+
+    override predicate calleeAndOffset(Function scope, int paramOffset) {
+        none()
+    }
+
+    pragma [noinline] override predicate attribute(string name, ObjectInternal value, CfgOrigin origin) {
+        none()
+    }
+
+    pragma [noinline] override predicate attributesUnknown() { any() }
+
+    override ControlFlowNode getOrigin() {
+        none()
+    }
+
+    override predicate callResult(ObjectInternal obj, CfgOrigin origin) {
+        // Don't know, assume not callable.
+        none()
+    }
+
+    override predicate callResult(PointsToContext callee, ObjectInternal obj, CfgOrigin origin) {
+        // Don't know, assume not callable.
+        none()
+    }
+
+    override boolean isClass() { result = maybe() }
+
+    override boolean isComparable() { result = false }
+
+    override boolean booleanValue() {
+        result = maybe()
+    }
+
+    override ObjectInternal getClass() {
+        result = ObjectInternal::unknownClass()
+    }
+
+    override boolean isDescriptor() { result = false }
+
+    override predicate descriptorGetClass(ObjectInternal cls, ObjectInternal value, CfgOrigin origin) { none() }
+
+    override predicate descriptorGetInstance(ObjectInternal instance, ObjectInternal value, CfgOrigin origin) { none() }
+
+    override predicate binds(ObjectInternal instance, string name, ObjectInternal descriptor) { none() }
+
+    override int length() { none() }
+
+    override predicate subscriptUnknown() { any() }
+
+}
+
