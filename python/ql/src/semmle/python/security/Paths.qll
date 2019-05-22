@@ -3,12 +3,14 @@ import python
 import semmle.python.security.TaintTracking
 
 query predicate edges(TaintedNode fromnode, TaintedNode tonode) {
-    fromnode.getASuccessor() = tonode
+    fromnode.getASuccessor() = tonode and
+    fromnode.flowsFromSource(_) and tonode.flowsToSink(_)
 }
 
 private TaintedNode first_child(TaintedNode parent) {
     result.getContext().getCaller() = parent.getContext() and
-    parent.getASuccessor() = result
+    parent.getASuccessor() = result and
+    edges(parent, result)
 }
 
 private TaintedNode next_sibling(TaintedNode child) {

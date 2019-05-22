@@ -675,12 +675,20 @@ class TaintedNode extends TTaintedNode {
 
     /** Holds if taint flows from this node to the sink `sink` and
      * reaches with a taint that `sink` is a sink of.
-     */
+     */ 
     predicate flowsToSink(TaintSink sink) {
         exists(TaintedNode node |
             this.getASuccessor*() = node and
             node.getNode() = sink and
             sink.sinks(node.getTaintKind())
+        )
+    }
+
+    predicate flowsFromSource(TaintSource source) {
+        exists(TaintedNode node |
+            node.getASuccessor*() = this and
+            node.getNode() = source and
+            source.isSourceOf(node.getTaintKind())
         )
     }
 
