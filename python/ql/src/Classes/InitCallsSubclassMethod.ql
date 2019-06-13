@@ -14,13 +14,13 @@
 import python
 
 
-from ClassObject supercls, string method, Call call,
-     FunctionObject overriding, FunctionObject overridden
+from ClassValue supercls, string method, Call call,
+     CallableValue overriding, CallableValue overridden
 
 where
-exists(FunctionObject init, SelfAttribute sa |
+exists(CallableValue init, SelfAttribute sa |
        supercls.declaredAttribute("__init__") = init and
-       call.getScope() = init.getFunction() and call.getFunc() = sa |
+       call.getScope() = init.getScope() and call.getFunc() = sa |
        sa.getName() = method and
        overridden = supercls.declaredAttribute(method) and
        overriding.overrides(overridden)
@@ -28,7 +28,7 @@ exists(FunctionObject init, SelfAttribute sa |
 
 select call, "Call to self.$@ in __init__ method, which is overridden by $@.",
   overridden, method,
-  overriding, overriding.descriptiveString()
+  overriding, overriding.toString()
 
 
 

@@ -14,13 +14,13 @@ import python
 import MethodCallOrder
 
 
-from ClassObject self, FunctionObject missing
+from ClassValue self, CallableValue missing
 
 where
     missing_call_to_superclass_method(self, _, missing, "__del__") and
     not missing.neverReturns() and
-    not self.failedInference() and
+    not self.failedInference(_) and
     not missing.isBuiltin()
 select self, "Class " + self.getName() + " may not be cleaned up properly as $@ is not called during deletion.",
-missing, missing.descriptiveString()
+missing, missing.toString()
 

@@ -12,21 +12,21 @@
 
 import python
 
-predicate mutates_descriptor(ClassObject cls, SelfAttributeStore s) {
-    cls.isDescriptorType() and
-    exists(PyFunctionObject f, PyFunctionObject get_set |
+predicate mutates_descriptor(ClassValue cls, SelfAttributeStore s) {
+    cls.hasAttribute("__get__") and
+    exists(CallableValue f, CallableValue get_set |
         exists(string name |
-            cls.lookupAttribute(name) = get_set |
+            cls.lookup(name) = get_set |
             name = "__get__" or name = "__set__" or name = "__delete__"
         ) and
-        cls.lookupAttribute(_) = f and
+        cls.lookup(_) = f and
         get_set.getACallee*() = f and
         not f.getName() = "__init__" and
-        s.getScope() = f.getFunction()
+        s.getScope() = f.getScope()
     )
 }
 
-from ClassObject cls, SelfAttributeStore s
+from ClassValue cls, SelfAttributeStore s
 where
 mutates_descriptor(cls, s)
 

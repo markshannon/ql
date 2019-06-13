@@ -101,6 +101,19 @@ class Value extends TObject {
         result = this.(ObjectInternal).getName()
     }
 
+    /** Holds if this overrides `other`. In this context, "overrides" means that this object
+     *  is a named attribute of a some class C and `o` is a named attribute of another
+     *  class S, both attributes having the same name, and S is a super class of C.
+     */
+    predicate overrides(Value other) {
+        exists(ClassValue thisdecl, ClassValue otherdecl, string name |
+            thisdecl.declaredAttribute(name) = this and
+            otherdecl.declaredAttribute(name) = other and
+            not thisdecl = otherdecl and
+            thisdecl.getASuperType() = otherdecl
+        )
+    }
+
 }
 
 /** Class representing modules in the Python program
@@ -271,7 +284,17 @@ class CallableValue extends Value {
         )
     }
 
+    /** Gets a callable that this function (directly) calls */
+    CallableValue getACallee() {
+        exists(ControlFlowNode node |
+            node.getScope() = this.getScope() and
+            result.getACall() = node
+        )
+    }
+
 }
+
+
 
 /** Class representing classes in the Python program, both Python and built-in.
  */
@@ -345,6 +368,47 @@ class ClassValue extends Value {
         result = this.(PythonClassObjectInternal).getScope()
     }
 
+    predicate declares(string name) {
+        this.(ClassObjectInternal).getClassDeclaration().declaresAttribute(name)
+    }
+
+    Value declaredAttribute(string name) {
+        Types::declaredAttribute(this, name, result, _)
+    }
+
+    ClassValue getBase(int n) {
+        result = Types::getBase(this, n)
+    }
+
+    /** Holds if it is impossible to know all the attributes of the class. Usually because it is
+        impossible to calculate the full class hierarchy or because some attribute is too dynamic. */
+    predicate unknowableAttributes() {
+        /* True for a class with undeterminable superclasses, unanalysable metaclasses, or other confusions */
+        this.failedInference(_)
+        or
+        this.getClass().failedInference(_)
+        or
+        exists(ClassValue base |
+            base = this.getBase(_) |
+            base.unknowableAttributes()
+        )
+    }
+
+    /* Holds if this class is abstract. */
+    predicate isAbstract() {
+        this.getClass() = Value::named("abc.ABCMeta")
+        or
+        exists(CallableValue f, Raise r, Name ex |
+            f = this.lookup(_) and
+            r.getScope() = f.getScope() |
+            (r.getException() = ex or r.getException().(Call).getFunc() = ex) and
+            (ex.getId() = "NotImplementedError" or ex.getId() = "NotImplemented")
+        )
+    }
+
+    predicate hasAttribute(string name) {
+        this.getMro().(ClassList).declares(name)
+    }
 }
 
 /** A method-resolution-order sequence of classes */
@@ -357,6 +421,18 @@ class MRO extends TClassList {
     /** Gets the `n`th class in this MRO */
     ClassValue getItem(int n) {
         result = this.(ClassList).getItem(n)
+    }
+
+}
+
+class TupleValue extends Value {
+
+    TupleValue() {
+        this instanceof TupleObjectInternal
+    }
+
+    int length() {
+        result = this.(TupleObjectInternal).length()
     }
 
 }

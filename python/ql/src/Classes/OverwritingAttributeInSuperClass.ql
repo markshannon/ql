@@ -43,7 +43,7 @@ predicate both_assign_attribute(Stmt s1, Stmt s2, Function f1, Function f2) {
 
 predicate attribute_overwritten(AssignStmt overwrites, AssignStmt overwritten, string name, string classtype, string classname)
 {
-    exists(FunctionObject superinit, FunctionObject subinit, ClassObject superclass, ClassObject subclass, AssignStmt subattr, AssignStmt superattr |
+    exists(CallableValue superinit, CallableValue subinit, ClassValue superclass, ClassValue subclass, AssignStmt subattr, AssignStmt superattr |
            (classtype = "superclass" and classname = superclass.getName() and overwrites = subattr and overwritten = superattr or
             classtype = "subclass" and classname = subclass.getName() and overwrites = superattr and overwritten = subattr)
            and
@@ -56,9 +56,9 @@ predicate attribute_overwritten(AssignStmt overwrites, AssignStmt overwritten, s
            and
            superclass = subclass.getASuperType()
            and
-           overwrites_which(subinit.getFunction(), subattr, classtype)
+           overwrites_which(subinit.getScope(), subattr, classtype)
            and
-           both_assign_attribute(subattr, superattr, subinit.getFunction(), superinit.getFunction())
+           both_assign_attribute(subattr, superattr, subinit.getScope(), superinit.getScope())
            and
            self_write_stmt(superattr, name)
           )

@@ -3,7 +3,7 @@ import python
 // Helper predicates for multiple call to __init__/__del__ queries.
 
 pragma [noinline]
-private predicate multiple_invocation_paths(FunctionInvocation top, FunctionInvocation i1, FunctionInvocation i2, FunctionObject multi) {
+private predicate multiple_invocation_paths(FunctionInvocation top, FunctionInvocation i1, FunctionInvocation i2, CallableValue multi) {
     i1 != i2 and
     i1 = top.getACallee+() and
     i2 = top.getACallee+() and
@@ -12,7 +12,7 @@ private predicate multiple_invocation_paths(FunctionInvocation top, FunctionInvo
 }
 
 /** Holds if `self.name` calls `multi` by multiple paths, and thus calls it more than once. */
-predicate multiple_calls_to_superclass_method(ClassObject self, FunctionObject multi, string name) {
+predicate multiple_calls_to_superclass_method(ClassValue self, CallableValue multi, string name) {
     exists(FunctionInvocation top, FunctionInvocation i1, FunctionInvocation i2 |
         multiple_invocation_paths(top, i1, i2, multi) and
         top.runtime(self.declaredAttribute(name)) and
@@ -26,36 +26,36 @@ predicate multiple_calls_to_superclass_method(ClassObject self, FunctionObject m
 }
 
 /** Holds if all attributes called `name` can be inferred to be methods. */
-private predicate named_attributes_not_method(ClassObject cls, string name) {
-    cls.declaresAttribute(name) and not cls.declaredAttribute(name) instanceof FunctionObject
+private predicate named_attributes_not_method(ClassValue cls, string name) {
+    cls.declares(name) and not cls.declaredAttribute(name) instanceof CallableValue
 }
 
 /** Holds if `f` actually does something. */
-private predicate does_something(FunctionObject f) {
-    f.isBuiltin() and not f = theObjectType().lookupAttribute("__init__")
+private predicate does_something(CallableValue f) {
+    f.isBuiltin() and not f = Value::named("object").(ClassValue).lookup("__init__")
     or
-    exists(Stmt s | s = f.getFunction().getAStmt() and not s instanceof Pass)
+    exists(Stmt s | s = f.getScope().getAStmt() and not s instanceof Pass)
 }
 
 /** Holds if `meth` looks like it should have a call to `name`, but does not */
-private predicate missing_call(FunctionObject meth, string name) {
+private predicate missing_call(CallableValue meth, string name) {
     exists(CallNode call, AttrNode attr |
-        call.getScope() = meth.getFunction() and
+        call.getScope() = meth.getScope() and
         call.getFunction() = attr and
         attr.getName() = name and
-        not exists(FunctionObject f | f.getACall() = call)
+        not exists(CallableValue f | f.getACall() = call)
     )
 }
 
 /** Holds if `self.name` does not call `missing`, even though it is expected to. */
-predicate missing_call_to_superclass_method(ClassObject self, FunctionObject top, FunctionObject missing, string name) {
+predicate missing_call_to_superclass_method(ClassValue self, CallableValue top, CallableValue missing, string name) {
     missing = self.getASuperType().declaredAttribute(name) and
-    top = self.lookupAttribute(name) and
+    top = self.lookup(name) and
     /* There is no call to missing originating from top */
     not top.getACallee*() = missing and
     /* Make sure that all named 'methods' are objects that we can understand. */
-    not exists(ClassObject sup |
-        sup = self.getAnImproperSuperType() and
+    not exists(ClassValue sup |
+        sup = self.getASuperType() and
         named_attributes_not_method(sup, name)
     ) and
     not self.isAbstract()

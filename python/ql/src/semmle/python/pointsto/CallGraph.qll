@@ -11,13 +11,13 @@
 import python
 private import semmle.python.pointsto.PointsToContext
 
-private newtype TTInvocation = TInvocation(FunctionObject f, Context c) {
+private newtype TTInvocation = TInvocation(CallableValue f, Context c) {
     exists(Context outer, CallNode call |
         call = f.getACall(outer) and
         c.fromCall(call, outer)
     )
     or
-    c.appliesToScope(f.getFunction())
+    c.appliesToScope(f.getScope())
 }
 
 /** This class represents a static approximation to the
@@ -28,7 +28,7 @@ class FunctionInvocation extends TTInvocation {
 
     string toString() { result = "Invocation" }
 
-    FunctionObject getFunction() { this = TInvocation(result, _) }
+    CallableValue getFunction() { this = TInvocation(result, _) }
 
     Context getContext() { this = TInvocation(_, result) }
 
@@ -36,12 +36,12 @@ class FunctionInvocation extends TTInvocation {
      * The callsite must be within the function of this invocation.
      */
     FunctionInvocation getCallee(CallNode call) {
-        exists(FunctionObject callee, Context callee_context, FunctionObject caller, Context caller_context |
+        exists(CallableValue callee, Context callee_context, CallableValue caller, Context caller_context |
             this = TInvocation(caller, caller_context) and
             result = TInvocation(callee, callee_context) and
             call = callee.getACall(caller_context) and
             callee_context.fromCall(call, caller_context) and
-            call.getScope() = caller.getFunction()
+            call.getScope() = caller.getScope()
         )
     }
 
@@ -53,7 +53,7 @@ class FunctionInvocation extends TTInvocation {
     }
 
     /** Holds if this is an invocation `f` in the "runtime" context. */
-    predicate runtime(FunctionObject f) {
+    predicate runtime(CallableValue f) {
         exists(Context c |
             c.isRuntime() and
             this = TInvocation(f, c)

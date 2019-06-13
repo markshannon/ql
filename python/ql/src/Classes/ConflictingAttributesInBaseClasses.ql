@@ -13,16 +13,16 @@
 
 import python
 
-predicate does_nothing(PyFunctionObject f) {
-    not exists(Stmt s | s.getScope() = f.getFunction() |
-        not s instanceof Pass and not ((ExprStmt)s).getValue() = f.getFunction().getDocString()
+predicate does_nothing(CallableValue f) {
+    not exists(Stmt s | s.getScope() = f.getScope() |
+        not s instanceof Pass and not ((ExprStmt)s).getValue() = f.getScope().getDocString()
     )
 }
 
 /* If a method performs a super() call then it is OK as the 'overridden' method will get called */
-predicate calls_super(FunctionObject f) {
+predicate calls_super(CallableValue f) {
     exists(Call sup, Call meth, Attribute attr, GlobalVariable v | 
-        meth.getScope() = f.getFunction() and
+        meth.getScope() = f.getScope() and
         meth.getFunc() = attr and
         attr.getObject() = sup and
         attr.getName() = f.getName() and
@@ -38,20 +38,21 @@ predicate whitelisted(string name) {
     name = "process_request"
 }
 
-from ClassObject c, ClassObject b1, ClassObject b2, string name,
-int i1, int i2, Object o1, Object o2
+
+from ClassValue c, ClassValue b1, ClassValue b2, string name,
+int i1, int i2, Value o1, Value o2
 where c.getBaseType(i1) = b1 and
 c.getBaseType(i2) = b2 and 
 i1 < i2 and o1 != o2 and
-o1 = b1.lookupAttribute(name) and 
-o2 = b2.lookupAttribute(name) and
+o1 = b1.lookup(name) and 
+o2 = b2.lookup(name) and
 not name.matches("\\_\\_%\\_\\_") and
 not calls_super(o1) and
 not does_nothing(o2) and
 not whitelisted(name) and
 not o1.overrides(o2) and
 not o2.overrides(o1) and
-not c.declaresAttribute(name)
+not c.declares(name)
 
 select c, "Base classes have conflicting values for attribute '" + name + "': $@ and $@.", o1, o1.toString(), o2, o2.toString()
 

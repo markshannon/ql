@@ -19,22 +19,22 @@
 
 import python
 
-predicate shadowed_by_super_class(ClassObject c, ClassObject supercls, Assign assign, FunctionObject f)
+predicate shadowed_by_super_class(ClassValue c, ClassValue supercls, Assign assign, CallableValue f)
 {
     c.getASuperType() = supercls and c.declaredAttribute(_) = f and
-    exists(FunctionObject init, Attribute attr |
+    exists(CallableValue init, Attribute attr |
         supercls.declaredAttribute("__init__") = init and
         attr = assign.getATarget() and
         ((Name)attr.getObject()).getId() = "self" and
         attr.getName() = f.getName() and
-        assign.getScope() = ((FunctionExpr)init.getOrigin()).getInnerScope()
+        assign.getScope() = init.getScope()
     ) and
     /* It's OK if the super class defines the method as well. 
      * We assume that the original method must have been defined for a reason. */
     not supercls.hasAttribute(f.getName())
 }
 
-from ClassObject c, ClassObject supercls, Assign assign, FunctionObject shadowed
+from ClassValue c, ClassValue supercls, Assign assign, CallableValue shadowed
 where shadowed_by_super_class(c, supercls, assign, shadowed)
-select shadowed.getOrigin(), "Method " + shadowed.getName() + " is shadowed by $@ in super class '"+ supercls.getName() + "'.", assign, "an attribute"
+select shadowed, "Method " + shadowed.getName() + " is shadowed by $@ in super class '"+ supercls.getName() + "'.", assign, "an attribute"
 
