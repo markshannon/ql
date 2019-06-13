@@ -4,7 +4,7 @@
  import python
 
 import semmle.dataflow.SSA
-import semmle.python.pointsto.PointsTo
+import semmle.python.objects.ObjectInternal
 
 private newtype TDefinition =
     TLocalDefinition(AstNode a) {
@@ -45,27 +45,17 @@ private predicate jump_to_defn(ControlFlowNode use, Definition defn) {
         jump_to_defn_attribute(use.(AttrNode).getObject(name), name, defn)
     )
     or
-    exists(PythonModuleObject mod |
-        use.(ImportExprNode).refersTo(mod) and
-        defn.getAstNode() = mod.getModule()
+    exists(ModuleObjectInternal mod |
+        use.(ImportExprNode).pointsTo(mod) and
+        defn.getAstNode() = mod.getSourceModule()
     )
     or
-    exists(PythonModuleObject mod, string name |
-        use.(ImportMemberNode).getModule(name).refersTo(mod) and
-        scope_jump_to_defn_attribute(mod.getModule(), name, defn)
+    exists(ModuleObjectInternal mod, string name |
+        use.(ImportMemberNode).getModule(name).pointsTo(mod) and
+        scope_jump_to_defn_attribute(mod.getSourceModule(), name, defn)
     )
     or
-    exists(PackageObject package |
-        use.(ImportExprNode).refersTo(package) and
-        defn.getAstNode() = package.getInitModule().getModule()
-    )
-    or
-    exists(PackageObject package, string name |
-        use.(ImportMemberNode).getModule(name).refersTo(package) and
-        scope_jump_to_defn_attribute(package.getInitModule().getModule(), name, defn)
-    )
-    or
-    (use instanceof PyFunctionObject or use instanceof ClassObject) and
+    (use.getNode() instanceof FunctionExpr or use.getNode() instanceof ClassExpr) and
     defn.getAstNode() = use.getNode()
 }
 
@@ -163,21 +153,21 @@ private predicate delete_defn(DeletionDefinition def, Definition defn) {
 /* Implicit "defn" of the names of submodules at the start of an `__init__.py` file.
  */
 private predicate implicit_submodule_defn(ImplicitSubModuleDefinition def, Definition defn) {
-    exists(PackageObject package, ModuleObject mod |
-        package.getInitModule().getModule() = def.getDefiningNode().getScope() and
+    exists(PackageObjectInternal package, ModuleObjectInternal mod |
+        package.getInitModule().getSourceModule() = def.getDefiningNode().getScope() and
         mod = package.submodule(def.getSourceVariable().getName()) and
-        defn.getAstNode() = mod.getModule()
+        defn.getAstNode() = mod.getSourceModule()
     )
 
 }
 
 /* Helper for scope_entry_value_transfer(...). Transfer of values from the callsite to the callee, for enclosing variables, but not arguments/parameters */
 private predicate scope_entry_value_transfer_at_callsite(EssaVariable pred_var, ScopeEntryDefinition succ_def) {
-    exists(CallNode callsite, FunctionObject f |
+    exists(CallNode callsite, PythonFunctionObjectInternal f |
         f.getACall() = callsite and
         pred_var.getSourceVariable() = succ_def.getSourceVariable() and
         pred_var.getAUse() = callsite and
-        succ_def.getDefiningNode() = f.getFunction().getEntryNode()
+        succ_def.getDefiningNode() = f.getScope().getEntryNode()
     )
 }
 
@@ -227,12 +217,12 @@ private predicate method_callsite_defn(MethodCallsiteRefinement def, Definition 
 
 /** Helpers for import_star_defn */
 pragma [noinline]
-private predicate module_and_name_for_import_star(ModuleObject mod, string name, ImportStarRefinement def) {
+private predicate module_and_name_for_import_star(ModuleObjectInternal mod, string name, ImportStarRefinement def) {
     exists(ImportStarNode im_star |
         im_star = def.getDefiningNode() |
         name = def.getSourceVariable().getName() and
-        im_star.getModule().refersTo(mod) and
-        mod.exports(name)
+        im_star.getModule().pointsTo(mod) and
+        mod.(ModuleValue).exports(name)
     )
 }
 
@@ -240,18 +230,18 @@ private predicate module_and_name_for_import_star(ModuleObject mod, string name,
 pragma [noinline]
 private predicate variable_not_redefined_by_import_star(EssaVariable var, ImportStarRefinement def) {
     var = def.getInput() and
-    exists(ModuleObject mod |
-        def.getDefiningNode().(ImportStarNode).getModule().refersTo(mod) and
+    exists(ModuleValue mod |
+        def.getDefiningNode().(ImportStarNode).getModule().pointsTo(mod) and
         not mod.exports(var.getSourceVariable().getName())
     )
 }
 
 /* Definition for `from ... import *` */
 private predicate import_star_defn(ImportStarRefinement def, Definition defn) {
-    exists(ModuleObject mod, string name |
+    exists(ModuleValue mod, string name |
         module_and_name_for_import_star(mod, name, def) |
         /* Attribute from imported module */
-        scope_jump_to_defn_attribute(mod.getModule(), name, defn)
+        scope_jump_to_defn_attribute(mod.getScope(), name, defn)
     )
     or
     exists(EssaVariable var |
@@ -354,27 +344,27 @@ private predicate jump_to_defn_attribute(ControlFlowNode use, string name, Defin
     )
     or
     /* Instance attributes */
-    exists(ClassObject cls |
-        use.refersTo(_, cls, _) |
-        scope_jump_to_defn_attribute(cls.getPyClass(), name, defn)
+    exists(ClassValue cls |
+        use.pointsTo(_, cls, _) |
+        scope_jump_to_defn_attribute(cls.getScope(), name, defn)
     )
     or
-    /* Super attributes */
-    exists(AttrNode f, SuperBoundMethod sbm, Object function |
+    /* Super or other bound-method attributes */
+    exists(AttrNode f, BoundMethodObjectInternal bm, ObjectInternal function |
         use = f.getObject(name) and
-        f.refersTo(sbm) and function = sbm.getFunction(_) and
-        function.getOrigin() = defn.getAstNode()
+        f.pointsTo(bm) and function = bm.getFunction() and
+        function.getOrigin().getNode() = defn.getAstNode()
     )
     or
     /* Class or module attribute */
-    exists(Object obj, Scope scope |
-        use.refersTo(obj) and
+    exists(ObjectInternal obj, Scope scope |
+        use.pointsTo(obj) and
         scope_jump_to_defn_attribute(scope, name, defn) |
-        obj.(ClassObject).getPyClass() = scope
+        obj.(PythonClassObjectInternal).getScope() = scope
         or
-        obj.(PythonModuleObject).getModule() = scope
+        obj.(PythonModuleObjectInternal).getSourceModule() = scope
         or
-        obj.(PackageObject).getInitModule().getModule() = scope
+        obj.(PackageObjectInternal).getInitModule().getSourceModule() = scope
     )
 }
 
@@ -396,7 +386,7 @@ private predicate attribute_assignment_jump_to_defn_attribute(AttributeAssignmen
 private predicate sets_attribute(ArgumentRefinement def, string name) {
     exists(CallNode call |
         call = def.getDefiningNode() and
-        call.getFunction().refersTo(Object::builtin("setattr")) and
+        call.getFunction().pointsTo(Value::named("setattr")) and
         def.getInput().getAUse() = call.getArg(0) and
         call.getArg(1).getNode().(StrConst).getText() = name
     )

@@ -12,5 +12,5 @@ import python
 
 from Class cls, string reason
 where
-exists(ClassObject c | c.getPyClass() = cls | c.failedInference(reason))
+exists(ClassValue c | c.getScope() = cls | c.failedInference(reason))
 select cls, "Inference of class hierarchy failed for class '" + cls.getName() + "': " + reason + "."

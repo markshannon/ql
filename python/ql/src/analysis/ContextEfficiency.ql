@@ -9,15 +9,15 @@ import semmle.python.pointsto.PointsToContext
 
 from int total_facts, int total_size, int depth, float efficiency
 where 
-total_facts = strictcount(ControlFlowNode f, Object value, ClassObject cls |
+total_facts = strictcount(ControlFlowNode f, Value value |
     exists(PointsToContext ctx |
-        PointsTo::points_to(f, ctx, value, cls, _) and
+        PointsTo::pointsTo(f, ctx, value, _) and
         depth = ctx.getDepth()
     )
 )
 and
-total_size = strictcount(ControlFlowNode f, Object value, ClassObject cls, PointsToContext ctx, ControlFlowNode orig |
-    PointsTo::points_to(f, ctx, value, cls, orig) and
+total_size = strictcount(ControlFlowNode f, Value value, PointsToContext ctx, ControlFlowNode orig |
+    PointsTo::pointsTo(f, ctx, value, orig) and
     depth = ctx.getDepth()
 )
 and

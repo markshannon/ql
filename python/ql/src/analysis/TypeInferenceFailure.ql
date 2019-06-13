@@ -9,7 +9,7 @@
 import python
 
 
-from ControlFlowNode f, Object o
-where f.refersTo(o) and 
-not exists(ClassObject c | f.refersTo(o, c, _))
+from ControlFlowNode f, Value o
+where f.pointsTo(o) and
+not exists(o.getClass())
 select o, "Type inference fails for 'object'."

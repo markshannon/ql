@@ -4,7 +4,7 @@
  import python
 
 import semmle.dataflow.SSA
-import semmle.python.pointsto.PointsTo
+import semmle.python.objects.ObjectInternal
 
 private newtype TSymbol =
     TModule(Module m)

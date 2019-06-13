@@ -138,6 +138,10 @@ class ModuleValue extends Value {
         result = this.(PythonModuleObjectInternal).getSourceModule().getFile()
     }
 
+    ModuleValue getPackage() {
+        result.(PackageObjectInternal).submodule(_) = this
+    }
+
 }
 
 module Module {
