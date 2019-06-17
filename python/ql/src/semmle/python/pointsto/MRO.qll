@@ -125,37 +125,10 @@ class ClassList extends TClassList {
         this = Empty() and result = Empty()
     }
 
-    predicate legalMergeHead(ClassObjectInternal cls) {
-        this.getTail().doesNotContain(cls)
-        or
-        this = Empty()
-    }
-
     predicate contains(ClassObjectInternal cls) {
         cls = this.getHead()
         or
         this.getTail().contains(cls)
-    }
-
-    /** Use negative formulation to avoid negative recursion */
-    predicate doesNotContain(ClassObjectInternal cls) {
-        this.relevantForContains(cls) and
-        cls != this.getHead() and
-        this.getTail().doesNotContain(cls)
-        or
-        this = Empty()
-    }
-
-    private predicate relevantForContains(ClassObjectInternal cls) {
-        exists(ClassListList list |
-            list.getItem(_).getHead() = cls and
-            list.getItem(_) = this
-        )
-        or
-        exists(ClassList l |
-            l.relevantForContains(cls) and
-            this = l.getTail()
-        )
     }
 
     ClassObjectInternal findDeclaringClass(string name) {
@@ -355,8 +328,28 @@ private class ClassListList extends TClassListList {
     predicate legalMergeCandidate(ClassObjectInternal cls, int n) {
         cls = this.getAHead() and n = this.length()
         or
-        this.getItem(n).legalMergeHead(cls) and
+        this.legalMergeHead(cls, n) and
         this.legalMergeCandidate(cls, n+1)
+    }
+
+    /** Holds if `cls` is a legal merge head of item `n`
+     * That is, it is the head of a one of the lists in this list of list and
+     * not in the tail of the `n`th list.
+     */
+    private predicate legalMergeHead(ClassObjectInternal cls, int n) {
+        this.legalMergeHead(cls, n, 1)
+        or
+        cls = this.getItem(_).getHead() and this.getItem(n) = Empty()
+    }
+
+    /** Holds if `cls` is a head of one of the lists and
+     * does not occur in list `n` at item `m` or later.
+     */
+    private predicate legalMergeHead(ClassObjectInternal cls, int n, int m) {
+        this.getItem(n).length() = m and cls = this.getItem(_).getHead() and m > 0
+        or
+        this.legalMergeHead(cls, n, m+1) and
+        this.getItem(n).getItem(m) != cls
     }
 
     predicate legalMergeCandidate(ClassObjectInternal cls) {
@@ -431,10 +424,16 @@ private ClassListList list_of_linearization_of_bases_plus_bases(ClassObjectInter
 private ClassListList list_of_linearization_of_bases_plus_bases(ClassObjectInternal cls, int n) {
     result = ConsList(bases(cls), EmptyList()) and n = Types::base_count(cls) and n > 1
     or
-    exists(ClassListList partial |
-        partial = list_of_linearization_of_bases_plus_bases(cls, n+1) and
-        result = ConsList(Mro::newStyleMro(Types::getBase(cls, n)), partial)
+    exists(ClassListList partial, ClassObjectInternal base |
+        partial_linearization_of_bases_plus_bases(cls, n, partial, base) and
+        result = ConsList(Mro::newStyleMro(base), partial)
     )
+}
+
+/** Join-ordering helper for list_of_linearization_of_bases_plus_bases */
+pragma [noinline]
+private predicate partial_linearization_of_bases_plus_bases(ClassObjectInternal cls, int n, ClassListList partial, ClassObjectInternal base) {
+    partial = list_of_linearization_of_bases_plus_bases(cls, n+1) and base = Types::getBase(cls, n)
 }
 
 private ClassList merge_of_linearization_of_bases(ClassObjectInternal cls) {
