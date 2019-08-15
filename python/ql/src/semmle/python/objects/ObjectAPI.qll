@@ -4,9 +4,6 @@
  */
 
 
-
-
-import python
 private import TObject
 private import semmle.python.objects.ObjectInternal
 private import semmle.python.pointsto.PointsTo
